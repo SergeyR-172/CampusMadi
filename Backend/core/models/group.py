@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .user import User
+    from .schedule_item import ScheduleItem
 
 from .base import Base
 
@@ -14,3 +15,4 @@ class Group(Base):
     name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
     users: Mapped[list["User"]] = relationship(back_populates="group", lazy="selectin")
+    schedule_items: Mapped[list["ScheduleItem"]] = relationship(back_populates="group", lazy="selectin")
