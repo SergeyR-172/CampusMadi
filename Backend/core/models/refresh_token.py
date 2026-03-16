@@ -9,8 +9,8 @@ if TYPE_CHECKING:
 
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
-
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+
     token_hash: Mapped[str] = mapped_column(unique=True, nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
