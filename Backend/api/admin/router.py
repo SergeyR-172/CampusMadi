@@ -98,6 +98,91 @@ async def list_groups(
 
 
 @router.get(
+    "/groups/{group_id}",
+    response_model=GroupOut,
+    summary="Получить группу по ID",
+    description="Возвращает группу по идентификатору. Доступно только администратору.",
+)
+async def get_group(
+    group_id: int,
+    _: isAdmin,
+    session: AsyncSession = Depends(database.get_session),
+):
+    group = await crud.get_group_by_id(session, group_id)
+    if group is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+    return group
+
+
+@router.post(
+    "/groups",
+    response_model=GroupOut,
+    summary="Создать группу",
+    description="Создает новую группу. Доступно только администратору.",
+)
+async def create_group(
+    group_data: GroupCreate,
+    _: isAdmin,
+    session: AsyncSession = Depends(database.get_session),
+):
+    existing_group = await crud.get_group_by_name(session, group_data.name)
+    if existing_group is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Group name already exists",
+        )
+
+    return await crud.create_group(session, group_data.name)
+
+
+@router.patch(
+    "/groups/{group_id}",
+    response_model=GroupOut,
+    summary="Обновить группу",
+    description="Частично обновляет данные группы. Доступно только администратору.",
+)
+async def update_group(
+    group_id: int,
+    group_data: GroupUpdate,
+    _: isAdmin,
+    session: AsyncSession = Depends(database.get_session),
+):
+    current_group = await crud.get_group_by_id(session, group_id)
+    if current_group is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+
+    values = group_data.model_dump(exclude_unset=True)
+    if "name" in values and values["name"] != current_group.name:
+        existing_group = await crud.get_group_by_name(session, values["name"])
+        if existing_group is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Group name already exists",
+            )
+
+    updated = await crud.update_group(session, group_id, values)
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+    return updated
+
+
+@router.delete(
+    "/groups/{group_id}",
+    summary="Удалить группу",
+    description="Удаляет группу по идентификатору. Доступно только администратору.",
+)
+async def delete_group(
+    group_id: int,
+    _: isAdmin,
+    session: AsyncSession = Depends(database.get_session),
+):
+    deleted = await crud.delete_group(session, group_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
     "/users",
     response_model=list[UserOut],
     summary="Получить список пользователей",

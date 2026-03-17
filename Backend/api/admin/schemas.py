@@ -33,6 +33,14 @@ class GroupOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class GroupCreate(BaseModel):
+    name: str
+
+
+class GroupUpdate(BaseModel):
+    name: str | None = None
+
+
 WeekType = Literal["odd", "even", "both"]
 
 
