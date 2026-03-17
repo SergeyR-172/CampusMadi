@@ -11,7 +11,12 @@ from api.jwt_auth.dependencies import get_current_user
 router = APIRouter(prefix="/api", tags=["Schedule"])
 
 
-@router.get("/schedule", response_model=list[ScheduleItemOut])
+@router.get(
+    "/schedule",
+    response_model=list[ScheduleItemOut],
+    summary="Получить расписание пользователя",
+    description="Возвращает расписание для группы текущего пользователя на день, вычисленный по параметру offset.",
+)
 async def get_schedule(
     offset: int = 0,
     user: User = Depends(get_current_user),

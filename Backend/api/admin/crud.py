@@ -13,6 +13,23 @@ async def get_users(session: AsyncSession) -> list[User]:
     return list(result.scalars().all())
 
 
+async def get_teachers(
+    session: AsyncSession,
+    *,
+    limit: int,
+    offset: int,
+) -> list[User]:
+    stmt = (
+        select(User)
+        .where(User.role == "teacher")
+        .order_by(User.id)
+        .limit(limit)
+        .offset(offset)
+    )
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
 async def get_user_by_id(session: AsyncSession, user_id: int) -> User | None:
     stmt = select(User).where(User.id == user_id)
     result = await session.execute(stmt)
@@ -67,6 +84,17 @@ async def get_group_by_id(session: AsyncSession, group_id: int) -> Group | None:
     stmt = select(Group).where(Group.id == group_id)
     result = await session.execute(stmt)
     return result.scalars().first()
+
+
+async def get_groups(
+    session: AsyncSession,
+    *,
+    limit: int,
+    offset: int,
+) -> list[Group]:
+    stmt = select(Group).order_by(Group.id).limit(limit).offset(offset)
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
 
 
 async def get_schedule_items(session: AsyncSession) -> list[ScheduleItem]:

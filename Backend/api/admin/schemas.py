@@ -26,6 +26,13 @@ class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class GroupOut(BaseModel):
+    id: int
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 WeekType = Literal["odd", "even", "both"]
 
 

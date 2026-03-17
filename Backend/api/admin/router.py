@@ -68,6 +68,36 @@ async def validate_schedule_conflict(
         )
 
 @router.get(
+    "/teachers",
+    response_model=list[UserOut],
+    summary="Получить список преподавателей",
+    description="Возвращает список преподавателей с пагинацией. Доступно только администратору.",
+)
+async def list_teachers(
+    _: isAdmin,
+    limit: int = 100,
+    offset: int = 0,
+    session: AsyncSession = Depends(database.get_session),
+):
+    return await crud.get_teachers(session, limit=limit, offset=offset)
+
+
+@router.get(
+    "/groups",
+    response_model=list[GroupOut],
+    summary="Получить список групп",
+    description="Возвращает список групп с пагинацией. Доступно только администратору.",
+)
+async def list_groups(
+    _: isAdmin,
+    limit: int = 100,
+    offset: int = 0,
+    session: AsyncSession = Depends(database.get_session),
+):
+    return await crud.get_groups(session, limit=limit, offset=offset)
+
+
+@router.get(
     "/users",
     response_model=list[UserOut],
     summary="Получить список пользователей",
