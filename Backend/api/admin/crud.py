@@ -86,6 +86,12 @@ async def get_group_by_id(session: AsyncSession, group_id: int) -> Group | None:
     return result.scalars().first()
 
 
+async def get_group_by_name(session: AsyncSession, name: str) -> Group | None:
+    stmt = select(Group).where(Group.name == name)
+    result = await session.execute(stmt)
+    return result.scalars().first()
+
+
 async def get_groups(
     session: AsyncSession,
     *,
@@ -95,6 +101,39 @@ async def get_groups(
     stmt = select(Group).order_by(Group.id).limit(limit).offset(offset)
     result = await session.execute(stmt)
     return list(result.scalars().all())
+
+
+async def create_group(session: AsyncSession, name: str) -> Group:
+    group = Group(name=name)
+    session.add(group)
+    await session.commit()
+    await session.refresh(group)
+    return group
+
+
+async def update_group(
+    session: AsyncSession,
+    group_id: int,
+    values: dict,
+) -> Group | None:
+    if not values:
+        return await get_group_by_id(session, group_id)
+
+    stmt = update(Group).where(Group.id == group_id).values(**values)
+    await session.execute(stmt)
+    await session.commit()
+    return await get_group_by_id(session, group_id)
+
+
+async def delete_group(session: AsyncSession, group_id: int) -> bool:
+    group = await get_group_by_id(session, group_id)
+    if group is None:
+        return False
+
+    stmt = delete(Group).where(Group.id == group_id)
+    await session.execute(stmt)
+    await session.commit()
+    return True
 
 
 async def get_schedule_items(session: AsyncSession) -> list[ScheduleItem]:
