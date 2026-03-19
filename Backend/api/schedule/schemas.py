@@ -1,6 +1,6 @@
 from datetime import date, time
 
-from pydantic import AliasPath, BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class NoteOut(BaseModel):
@@ -23,7 +23,7 @@ class ScheduleItemOut(BaseModel):
     id: int
     subject: str
     group_id: int
-    teacher_name: str = Field(validation_alias=AliasPath("teacher", "name"))
+    teacher_name: str
     day_of_week: int
     pair_number: int
     week_type: str

@@ -92,7 +92,7 @@ async def get_current_week_schedule(
             detail="User does not consist in a group",
         )
 
-    monday, sunday = get_current_week_range(current_day)
+    monday, _ = get_current_week_range(current_day)
     week_schedule: list[ScheduleDayOut] = []
 
     for day_offset in range(7):
