@@ -231,12 +231,21 @@ async def create_user(
             detail="Username already exists",
         )
 
+    if user_data.group_id is not None:
+        group = await crud.get_group_by_id(session, user_data.group_id)
+        if group is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Group not found",
+            )
+
     return await crud.create_user(
         session=session,
         username=user_data.username,
         hashed_password=hash_password(user_data.password),
         name=user_data.name,
         role=user_data.role,
+        group_id=user_data.group_id,
     )
 
 
@@ -265,6 +274,14 @@ async def update_user(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Username already exists",
+            )
+
+    if "group_id" in values and values["group_id"] is not None:
+        group = await crud.get_group_by_id(session, values["group_id"])
+        if group is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Group not found",
             )
 
     updated = await crud.update_user(session, user_id, values)

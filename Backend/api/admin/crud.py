@@ -42,12 +42,14 @@ async def create_user(
     hashed_password: str,
     name: str,
     role: str = "default",
+    group_id: int | None = None,
 ) -> User:
     user = User(
         username=username,
         hashed_password=hashed_password,
         name=name,
         role=role,
+        group_id=group_id,
     )
     session.add(user)
     await session.commit()

@@ -8,6 +8,7 @@ class UserCreate(BaseModel):
     password: str
     name: str
     role: str = "default"
+    group_id: int | None = None
 
 
 class UserUpdate(BaseModel):
@@ -15,6 +16,7 @@ class UserUpdate(BaseModel):
     password: str | None = None
     name: str | None = None
     role: str | None = None
+    group_id: int | None = None
 
 
 class UserOut(BaseModel):
@@ -22,6 +24,7 @@ class UserOut(BaseModel):
     username: str
     name: str
     role: str
+    group_id: int | None
 
     model_config = ConfigDict(from_attributes=True)
 
