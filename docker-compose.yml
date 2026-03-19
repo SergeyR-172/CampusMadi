@@ -38,7 +38,7 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: 5
     ports:
       - "8000:8000"
-    command: ["sh", "-c", "python init_db.py && python create_test_users.py && uvicorn main:app --host 0.0.0.0 --port 8000"]
+    command: ["sh", "-c", "uv run python init_db.py && uv run python create_test_users.py && uv run uvicorn main:app --host 0.0.0.0 --port 8000"]
 
 volumes:
   postgres_data:
