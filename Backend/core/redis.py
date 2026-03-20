@@ -1,19 +1,20 @@
 import redis.asyncio as redis
 import json
 from typing import Any, Optional
+from .settings import settings
 
 
 class AsyncRedisClient:
     def __init__(
         self,
-        url: str = "redis://localhost:6379/0",
     ):
+        url = settings.redis_url
         self._client = redis.from_url(url, decode_responses=True)
 
-    async def set(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
+    async def set_json(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
         return await self._client.set(key, json.dumps(value), ex=ex)
 
-    async def get(self, key: str) -> Any:
+    async def get_json(self, key: str) -> Any:
         value = await self._client.get(key)
         return json.loads(value) if value else None
 
