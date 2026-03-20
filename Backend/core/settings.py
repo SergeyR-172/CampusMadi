@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     db_type: str = os.getenv('DB_TYPE', 'sqlite')
     db_echo: bool = False
 
+    redis_url: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
     secret_key: str = os.getenv('SECRET_KEY', 'very-secret-key')
     algorithm: str = os.getenv('ALGORITHM', 'HS256')
     access_token_expire_minutes: int = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', 5))
