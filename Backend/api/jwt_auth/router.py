@@ -49,7 +49,8 @@ async def auth_user_jwt(
     jwt_payload = {
         "sub": str(user.id),
         "username": user.username,
-        "role": user.role
+        "role": user.role,
+        "group_id": user.group_id,
     }
     access_token = create_access_token(payload=jwt_payload)
     refresh_token, refresh_token_hash = create_refresh_token()
@@ -155,6 +156,7 @@ async def refresh_tokens_jwt(
         "sub": str(token_entry.user.id),
         "username": token_entry.user.username,
         "role": token_entry.user.role,
+        "group_id": token_entry.user.group_id,
     }
     access_token = create_access_token(payload=jwt_payload)
 

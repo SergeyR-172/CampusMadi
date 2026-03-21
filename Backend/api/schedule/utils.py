@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.models import User
+from api.jwt_auth.schemas import AuthUserPayload
 from core.redis import redis_client
 from core.settings import settings
 from .crud import get_notes_for_schedule_items, get_schedule_items_for_day
@@ -62,31 +62,32 @@ def serialize_schedule_items(items, notes, user_id: int) -> list[ScheduleItemOut
     return serialized_items
 
 
-def ensure_user_group_id(user: User) -> int:
-    if user.group_id is None:
+def ensure_user_group_id(payload: AuthUserPayload) -> int:
+    if payload.group_id is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User does not consist in a group",
         )
 
-    return user.group_id
+    return payload.group_id
 
 
 async def get_serialized_schedule_for_day(
     session: AsyncSession,
-    user: User,
+    payload: AuthUserPayload,
     target_day: datetime,
 ) -> list[dict]:
-    group_id = ensure_user_group_id(user)
+    user_id = payload.sub
+    group_id = ensure_user_group_id(payload)
     target_date = target_day.date()
-    cache_key = build_day_schedule_cache_key(user.id, group_id, target_date)
+    cache_key = build_day_schedule_cache_key(user_id, group_id, target_date)
     cached_schedule = await redis_client.get_json(cache_key)
     if cached_schedule is not None:
         return cached_schedule
 
     items = await get_schedule_items_for_day(session, group_id, target_day)
     notes = await get_notes_for_schedule_items(session, [item.id for item in items])
-    serialized_items = serialize_schedule_items(items, notes, user.id)
+    serialized_items = serialize_schedule_items(items, notes, user_id)
     serialized_schedule = [item.model_dump(mode="json") for item in serialized_items]
 
     await redis_client.set_json(
@@ -99,12 +100,13 @@ async def get_serialized_schedule_for_day(
 
 async def get_serialized_schedule_for_week(
     session: AsyncSession,
-    user: User,
+    payload: AuthUserPayload,
     current_day: datetime,
 ) -> list[dict]:
-    group_id = ensure_user_group_id(user)
+    user_id = payload.sub
+    group_id = ensure_user_group_id(payload)
     monday, _ = get_current_week_range(current_day)
-    cache_key = build_week_schedule_cache_key(user.id, group_id, monday)
+    cache_key = build_week_schedule_cache_key(user_id, group_id, monday)
     cached_schedule = await redis_client.get_json(cache_key)
     if cached_schedule is not None:
         return cached_schedule
@@ -115,7 +117,7 @@ async def get_serialized_schedule_for_week(
         day_datetime = datetime.combine(day_date, datetime.min.time())
         serialized_day_items = await get_serialized_schedule_for_day(
             session,
-            user,
+            payload,
             day_datetime,
         )
         day_schedule = ScheduleDayOut(

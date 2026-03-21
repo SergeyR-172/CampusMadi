@@ -14,6 +14,13 @@ class UserSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
+class AuthUserPayload(BaseModel):
+    sub: int
+    username: str
+    role: str
+    group_id: Optional[int] = None
+
 class UserLogin(BaseModel):
     username: str
     password: str

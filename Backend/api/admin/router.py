@@ -7,8 +7,8 @@ from typing import Annotated
 from .schemas import *
 
 from core.database import database
-from core.models.user import User
 from api.jwt_auth import dependencies as auth_dp
+from api.jwt_auth.schemas import AuthUserPayload
 from api.jwt_auth.utils import hash_password
 from api.jwt_auth.crud import get_user_by_username
 from . import crud
@@ -17,7 +17,7 @@ from . import crud
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
 
 
-isAdmin = Annotated[User, Depends(auth_dp.is_admin)]
+isAdmin = Annotated[AuthUserPayload, Depends(auth_dp.is_admin)]
 
 
 async def validate_schedule_relations(

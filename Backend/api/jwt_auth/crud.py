@@ -11,6 +11,12 @@ async def get_user_by_username(session: AsyncSession, username: str) -> User | N
     return result.scalars().first()
 
 
+async def get_user_by_id(session: AsyncSession, user_id: int) -> User | None:
+    stmt = select(User).where(User.id == user_id)
+    result = await session.execute(stmt)
+    return result.scalars().first()
+
+
 async def get_refresh_token_by_hash(session: AsyncSession, token_hash: str) -> RefreshToken | None:
     stmt = select(RefreshToken).where(RefreshToken.token_hash == token_hash)
     result = await session.execute(stmt)
