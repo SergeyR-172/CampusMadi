@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     db_echo: bool = False
 
     redis_url: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    day_schedule_ttl: int = int(os.getenv('DAY_SCHEDULE_CACHE_TTL_SECONDS', 300))
+    week_schedule_ttl: int = int(os.getenv('WEEK_SCHEDULE_CACHE_TTL_SECONDS', 900))
 
     secret_key: str = os.getenv('SECRET_KEY', 'very-secret-key')
     algorithm: str = os.getenv('ALGORITHM', 'HS256')

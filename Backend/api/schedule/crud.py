@@ -44,8 +44,4 @@ async def get_notes_for_schedule_items(
     return list(result.scalars().all())
 
 
-def get_current_week_range(current_day: datetime) -> tuple[date, date]:
-    current_date = current_day.date()
-    monday = current_date - timedelta(days=current_date.isoweekday() - 1)
-    sunday = monday + timedelta(days=6)
-    return monday, sunday
+
