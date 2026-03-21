@@ -8,7 +8,7 @@ import uvicorn
 app = FastAPI(
     title="CampusMadi Backend API",
     description="API для работы с расписанием и заметками к нему.",
-    version="0.1.0",
+    version="0.8.1",
 )
 
 app.add_middleware(
