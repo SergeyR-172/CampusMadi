@@ -117,6 +117,12 @@ def build_test_notes(users: dict[str, User], schedule_items: dict[tuple[int, str
             "private": False,
         },
         {
+            "author_id": users["test_teacher"].id,
+            "schedule_item_id": se241_math.id,
+            "text": "We will also have a short quiz at the beginning of the class.",
+            "private": True,
+        },
+        {
             "author_id": users["test_student_1"].id,
             "schedule_item_id": se241_math.id,
             "text": "Need to review integrals before class.",

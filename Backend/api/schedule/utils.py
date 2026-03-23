@@ -64,7 +64,7 @@ def serialize_schedule_items(
         user_notes = [note for note in item_notes if note.author_id == user_id]
 
         if user_role == "teacher":
-            user_notes = [note for note in user_notes if note.author_id != item.teacher_id]
+            user_notes = [note for note in user_notes if note.private == True]
 
         serialized_items.append(
             ScheduleItemOut(
