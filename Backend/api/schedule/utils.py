@@ -6,7 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.jwt_auth.schemas import AuthUserPayload
 from core.redis import redis_client
 from core.settings import settings
-from .crud import get_notes_for_schedule_items, get_schedule_items_for_day
+from .crud import (
+    get_notes_for_schedule_items,
+    get_schedule_items_for_day,
+    get_teacher_schedule_items_for_day,
+)
 from .schemas import NoteOut, ScheduleDayOut, ScheduleItemOut
 
 
@@ -20,6 +24,14 @@ def build_week_schedule_cache_key(user_id: int, group_id: int, monday: date) -> 
     return f"schedule:week:user:{user_id}:group:{group_id}:monday:{monday.isoformat()}"
 
 
+def build_teacher_day_schedule_cache_key(user_id: int, target_date: date) -> str:
+    return f"schedule:day:teacher:{user_id}:date:{target_date.isoformat()}"
+
+
+def build_teacher_week_schedule_cache_key(user_id: int, monday: date) -> str:
+    return f"schedule:week:teacher:{user_id}:monday:{monday.isoformat()}"
+
+
 def get_current_week_range(current_day: datetime) -> tuple[date, date]:
     current_date = current_day.date()
     monday = current_date - timedelta(days=current_date.isoweekday() - 1)
@@ -27,7 +39,12 @@ def get_current_week_range(current_day: datetime) -> tuple[date, date]:
     return monday, sunday
 
 
-def serialize_schedule_items(items, notes, user_id: int) -> list[ScheduleItemOut]:
+def serialize_schedule_items(
+    items,
+    notes,
+    user_id: int,
+    user_role: str,
+) -> list[ScheduleItemOut]:
     notes_by_schedule_item: dict[int, list[NoteOut]] = {}
     for note in notes:
         if note.schedule_item_id is None:
@@ -39,11 +56,22 @@ def serialize_schedule_items(items, notes, user_id: int) -> list[ScheduleItemOut
     serialized_items: list[ScheduleItemOut] = []
     for item in items:
         item_notes = notes_by_schedule_item.get(item.id, [])
+        teacher_notes = [
+            note
+            for note in item_notes
+            if note.author_id == item.teacher_id and note.private == False
+        ]
+        user_notes = [note for note in item_notes if note.author_id == user_id]
+
+        if user_role == "teacher":
+            user_notes = [note for note in user_notes if note.author_id != item.teacher_id]
+
         serialized_items.append(
             ScheduleItemOut(
                 id=item.id,
                 subject=item.subject,
                 group_id=item.group_id,
+                group_name=item.group.name,
                 teacher_name=item.teacher.name,
                 day_of_week=item.day_of_week,
                 pair_number=item.pair_number,
@@ -52,10 +80,8 @@ def serialize_schedule_items(items, notes, user_id: int) -> list[ScheduleItemOut
                 end_time=item.end_time,
                 date_from=item.date_from,
                 date_to=item.date_to,
-                user_notes=[note for note in item_notes if note.author_id == user_id],
-                teacher_notes=[
-                    note for note in item_notes if note.author_id == item.teacher_id
-                ],
+                user_notes=user_notes,
+                teacher_notes=teacher_notes,
             )
         )
 
@@ -70,6 +96,14 @@ def ensure_user_group_id(payload: AuthUserPayload) -> int:
         )
 
     return payload.group_id
+
+
+def ensure_teacher(payload: AuthUserPayload) -> None:
+    if payload.role != "teacher":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not a teacher",
+        )
 
 
 async def get_serialized_schedule_for_day(
@@ -87,7 +121,7 @@ async def get_serialized_schedule_for_day(
 
     items = await get_schedule_items_for_day(session, group_id, target_day)
     notes = await get_notes_for_schedule_items(session, [item.id for item in items])
-    serialized_items = serialize_schedule_items(items, notes, user_id)
+    serialized_items = serialize_schedule_items(items, notes, user_id, payload.role)
     serialized_schedule = [item.model_dump(mode="json") for item in serialized_items]
 
     await redis_client.set_json(
@@ -116,6 +150,69 @@ async def get_serialized_schedule_for_week(
         day_date = monday + timedelta(days=day_offset)
         day_datetime = datetime.combine(day_date, datetime.min.time())
         serialized_day_items = await get_serialized_schedule_for_day(
+            session,
+            payload,
+            day_datetime,
+        )
+        day_schedule = ScheduleDayOut(
+            date=day_date,
+            day_of_week=day_date.isoweekday(),
+            items=[ScheduleItemOut.model_validate(item) for item in serialized_day_items],
+        )
+        serialized_week_schedule.append(day_schedule.model_dump(mode="json"))
+
+    await redis_client.set_json(
+        cache_key,
+        serialized_week_schedule,
+        ex=settings.week_schedule_ttl,
+    )
+    return serialized_week_schedule
+
+
+async def get_serialized_teacher_schedule_for_day(
+    session: AsyncSession,
+    payload: AuthUserPayload,
+    target_day: datetime,
+) -> list[dict]:
+    ensure_teacher(payload)
+    user_id = payload.sub
+    target_date = target_day.date()
+    cache_key = build_teacher_day_schedule_cache_key(user_id, target_date)
+    cached_schedule = await redis_client.get_json(cache_key)
+    if cached_schedule is not None:
+        return cached_schedule
+
+    items = await get_teacher_schedule_items_for_day(session, user_id, target_day)
+    notes = await get_notes_for_schedule_items(session, [item.id for item in items])
+    serialized_items = serialize_schedule_items(items, notes, user_id, payload.role)
+    serialized_schedule = [item.model_dump(mode="json") for item in serialized_items]
+
+    await redis_client.set_json(
+        cache_key,
+        serialized_schedule,
+        ex=settings.day_schedule_ttl,
+    )
+    return serialized_schedule
+
+
+async def get_serialized_teacher_schedule_for_week(
+    session: AsyncSession,
+    payload: AuthUserPayload,
+    current_day: datetime,
+) -> list[dict]:
+    ensure_teacher(payload)
+    user_id = payload.sub
+    monday, _ = get_current_week_range(current_day)
+    cache_key = build_teacher_week_schedule_cache_key(user_id, monday)
+    cached_schedule = await redis_client.get_json(cache_key)
+    if cached_schedule is not None:
+        return cached_schedule
+
+    serialized_week_schedule: list[dict] = []
+    for day_offset in range(7):
+        day_date = monday + timedelta(days=day_offset)
+        day_datetime = datetime.combine(day_date, datetime.min.time())
+        serialized_day_items = await get_serialized_teacher_schedule_for_day(
             session,
             payload,
             day_datetime,

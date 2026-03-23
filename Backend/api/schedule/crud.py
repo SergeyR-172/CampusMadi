@@ -32,6 +32,35 @@ async def get_schedule_items_for_day(
     return list(result.scalars().all())
 
 
+async def get_teacher_schedule_items_for_day(
+    session: AsyncSession,
+    teacher_id: int,
+    current_day: datetime,
+) -> list[ScheduleItem]:
+    current_date = current_day.date()
+    week_type = "even" if current_day.isocalendar().week % 2 == 0 else "odd"
+    day_of_week = current_day.isoweekday()
+
+    stmt = (
+        select(ScheduleItem)
+        .options(
+            selectinload(ScheduleItem.teacher),
+            selectinload(ScheduleItem.group),
+        )
+        .where(
+            ScheduleItem.teacher_id == teacher_id,
+            ScheduleItem.week_type.in_([week_type, "both"]),
+            ScheduleItem.day_of_week == day_of_week,
+            ScheduleItem.date_from <= current_date,
+            ScheduleItem.date_to >= current_date,
+        )
+        .order_by(ScheduleItem.pair_number, ScheduleItem.group_id)
+    )
+
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
 async def get_notes_for_schedule_items(
     session: AsyncSession,
     schedule_item_ids: list[int],

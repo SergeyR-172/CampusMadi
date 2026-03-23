@@ -3,11 +3,17 @@ from datetime import date, time
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class NoteCreate(BaseModel):
+    text: str = Field(min_length=1, max_length=255)
+    private: bool = False
+
+
 class NoteOut(BaseModel):
     id: int
     author_id: int
     schedule_item_id: int | None
     text: str
+    private: bool
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -23,6 +29,7 @@ class ScheduleItemOut(BaseModel):
     id: int
     subject: str
     group_id: int
+    group_name: str
     teacher_name: str
     day_of_week: int
     pair_number: int
