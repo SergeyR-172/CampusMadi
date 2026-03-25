@@ -1,28 +1,47 @@
-from pydantic_settings import BaseSettings
 from pathlib import Path
-import os
 
-def get_db_url():
-    db_type = os.getenv('DB_TYPE', 'sqlite')
-    if db_type == 'postgres':
-        return f"postgresql+asyncpg://{os.getenv('POSTGRES_USER', 'user')}:{os.getenv('POSTGRES_PASSWORD', '1234')}@{os.getenv('POSTGRES_HOST', 'localhost')}:{os.getenv('POSTGRES_PORT', 5432)}/{os.getenv('POSTGRES_DB', 'project_db')}"
-    else:
-        BASE_DIR = Path(__file__).parent.parent
-        DB_PATH = BASE_DIR / "db.sqlite3"
-        return f"sqlite+aiosqlite:///{DB_PATH}"
+from pydantic import computed_field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DB_PATH = BASE_DIR / "db.sqlite3"
+
 
 class Settings(BaseSettings):
-    db_url: str = get_db_url()
-    db_type: str = os.getenv('DB_TYPE', 'sqlite')
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    db_type: str = "sqlite"
     db_echo: bool = False
 
-    redis_url: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-    day_schedule_ttl: int = int(os.getenv('DAY_SCHEDULE_CACHE_TTL_SECONDS', 5))
-    week_schedule_ttl: int = int(os.getenv('WEEK_SCHEDULE_CACHE_TTL_SECONDS', 5))
+    postgres_user: str = "user"
+    postgres_password: str = "1234"
+    postgres_host: str = "localhost"
+    postgres_port: int = 5432
+    postgres_db: str = "project_db"
 
-    secret_key: str = os.getenv('SECRET_KEY', 'very-secret-key')
-    algorithm: str = os.getenv('ALGORITHM', 'HS256')
-    access_token_expire_minutes: int = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', 5))
+    redis_url: str = "redis://localhost:6379/0"
+    day_schedule_ttl: int = 5
+    week_schedule_ttl: int = 5
+
+    secret_key: str = "very-secret-key"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 5
+
+    @computed_field
+    @property
+    def db_url(self) -> str:
+        if self.db_type == "postgres":
+            return (
+                f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
+                f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+            )
+
+        return f"sqlite+aiosqlite:///{DB_PATH}"
 
 
 settings = Settings()
