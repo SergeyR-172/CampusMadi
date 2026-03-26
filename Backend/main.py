@@ -4,6 +4,7 @@ from api.jwt_auth.router import router as jwt_router
 from api.admin.router import router as admin_router
 from api.notes.router import router as notes_router
 from api.schedule.router import router as schedule_router
+from core.logging import register_logging_middleware
 import uvicorn
 
 app = FastAPI(
@@ -11,6 +12,7 @@ app = FastAPI(
     description="API для работы с расписанием и заметками к нему.",
     version="0.8.1",
 )
+register_logging_middleware(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,4 +37,4 @@ def healthcheck():
     return {"message": "server is ok"}
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", reload=True, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", reload=True, host="0.0.0.0", port=8000, access_log=False)
