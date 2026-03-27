@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: backend-dashboards
+    orgId: 1
+    folder: CampusMadi
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

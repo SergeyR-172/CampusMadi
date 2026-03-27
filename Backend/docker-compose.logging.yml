@@ -90,6 +90,8 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
       - ./logging/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./logging/grafana/dashboard-providers.yaml:/etc/grafana/provisioning/dashboards/dashboard-providers.yaml:ro
+      - ./logging/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
 
 volumes:
