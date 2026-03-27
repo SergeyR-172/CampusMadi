@@ -1,0 +1,47 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: campusmadi-backend
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+
+    pipeline_stages:
+      - docker: {}
+      - match:
+          selector: '{container="campusmadi-backend-app"}'
+          stages:
+            - regex:
+                expression: '^(?P<json_line>\{.*\})$'
+            - output:
+                source: json_line
+            - json:
+                expressions:
+                  logger: logger
+                  status_code: status_code
+                  method: method
+            - labels:
+                logger:
+                status_code:
+                method:
+
+    relabel_configs:
+      - source_labels: [__meta_docker_container_name]
+        regex: /campusmadi-backend-app
+        action: keep
+
+      - source_labels: [__meta_docker_container_name]
+        target_label: container
+        regex: /(.*)
+        replacement: $1
+
+      - target_label: service
+        replacement: app
