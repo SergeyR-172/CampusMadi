@@ -1,0 +1,100 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: campusmadi-backend-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: project_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d project_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8.0-alpine
+    container_name: campusmadi-backend-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campusmadi-backend-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_TYPE: postgres
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: project_db
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: very-secret-key
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 5
+    ports:
+      - "8000:8000"
+    command: ["sh", "-c", "uv run python init_db.py && uv run python create_test_users.py && uv run uvicorn main:app --host 0.0.0.0 --port 8000"]
+
+  loki:
+    image: grafana/loki:3.7.0
+    container_name: campusmadi-backend-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    command: ["-config.file=/etc/loki/config.yaml"]
+    volumes:
+      - ./logging/loki-config.yaml:/etc/loki/config.yaml:ro
+      - loki_data:/loki
+
+  promtail:
+    image: grafana/promtail:3.6.8
+    container_name: campusmadi-backend-promtail
+    restart: unless-stopped
+    depends_on:
+      - loki
+    command: ["-config.file=/etc/promtail/config.yaml"]
+    volumes:
+      - ./logging/promtail-config.yaml:/etc/promtail/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  grafana:
+    image: grafana/grafana:12.3.6
+    container_name: campusmadi-backend-grafana
+    restart: unless-stopped
+    depends_on:
+      - loki
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./logging/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./logging/grafana/dashboard-providers.yaml:/etc/grafana/provisioning/dashboards/dashboard-providers.yaml:ro
+      - ./logging/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+
+volumes:
+  postgres_data:
+  loki_data:
+  grafana_data:
