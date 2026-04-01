@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import APIKeyCookie
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import database
@@ -10,19 +10,22 @@ from .utils import decode_jwt
 from core.models.user import User
 from . import crud
 
-security = HTTPBearer(auto_error=False)
+security = APIKeyCookie(
+    name="access_token",
+    scheme_name="Access token cookie",
+    description="JWT access token stored in HttpOnly cookie `access_token`.",
+    auto_error=False,
+)
 
 
 async def get_current_payload(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    token: str | None = Depends(security),
 ) -> AuthUserPayload:
-    if credentials is None:
+    if token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
         )
-
-    token = credentials.credentials
 
     try:
         payload = decode_jwt(token)
