@@ -1,0 +1,1977 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CampusMadi Backend API",
+    "description": "API для работы с расписанием и заметками к нему.",
+    "version": "0.8.1"
+  },
+  "paths": {
+    "/api/jwt/me": {
+      "get": {
+        "tags": ["JWT_Auth"],
+        "summary": "Получить профиль текущего пользователя",
+        "description": "Возвращает данные пользователя на основе access_token из HttpOnly cookie.",
+        "operationId": "get_me_api_jwt_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSchema"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ]
+      }
+    },
+    "/api/jwt/login": {
+      "post": {
+        "tags": ["JWT_Auth"],
+        "summary": "Вход в систему",
+        "description": "Проверяет логин и пароль, выдает access token и устанавливает access/refresh токены в cookies.",
+        "operationId": "auth_user_jwt_api_jwt_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLogin"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenInfo"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jwt/logout": {
+      "post": {
+        "tags": ["JWT_Auth"],
+        "summary": "Выход из системы",
+        "description": "Отзывает refresh token (если есть) и удаляет access/refresh cookies.",
+        "operationId": "logout_user_jwt_api_jwt_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/jwt/refresh": {
+      "post": {
+        "tags": ["JWT_Auth"],
+        "summary": "Обновить пару токенов",
+        "description": "Проверяет refresh token из cookie, перевыпускает access token и новый refresh token.",
+        "operationId": "refresh_tokens_jwt_api_jwt_refresh_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/teachers": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Получить список преподавателей",
+        "description": "Возвращает список преподавателей с пагинацией. Доступно только администратору.",
+        "operationId": "list_teachers_api_admin_teachers_get",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserOut"
+                  },
+                  "title": "Response List Teachers Api Admin Teachers Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/groups": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Получить список групп",
+        "description": "Возвращает список групп с пагинацией. Доступно только администратору.",
+        "operationId": "list_groups_api_admin_groups_get",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GroupOut"
+                  },
+                  "title": "Response List Groups Api Admin Groups Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Создать группу",
+        "description": "Создает новую группу. Доступно только администратору.",
+        "operationId": "create_group_api_admin_groups_post",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/groups/{group_id}": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Получить группу по ID",
+        "description": "Возвращает группу по идентификатору. Доступно только администратору.",
+        "operationId": "get_group_api_admin_groups__group_id__get",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Обновить группу",
+        "description": "Частично обновляет данные группы. Доступно только администратору.",
+        "operationId": "update_group_api_admin_groups__group_id__patch",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Удалить группу",
+        "description": "Удаляет группу по идентификатору. Доступно только администратору.",
+        "operationId": "delete_group_api_admin_groups__group_id__delete",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Получить список пользователей",
+        "description": "Возвращает список всех пользователей. Доступно только администратору.",
+        "operationId": "list_users_api_admin_users_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Users Api Admin Users Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Создать пользователя",
+        "description": "Создает нового пользователя с указанной ролью. Доступно только администратору.",
+        "operationId": "create_user_api_admin_users_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ]
+      }
+    },
+    "/api/admin/users/{user_id}": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Получить пользователя по ID",
+        "description": "Возвращает пользователя по идентификатору. Доступно только администратору.",
+        "operationId": "get_user_api_admin_users__user_id__get",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Обновить пользователя",
+        "description": "Частично обновляет данные пользователя (username, password, name, role). Доступно только администратору.",
+        "operationId": "update_user_api_admin_users__user_id__patch",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Удалить пользователя",
+        "description": "Удаляет пользователя по идентификатору. Доступно только администратору.",
+        "operationId": "delete_user_api_admin_users__user_id__delete",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/schedule": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Получить список расписания",
+        "description": "Возвращает все элементы расписания. Доступно только администратору.",
+        "operationId": "list_schedule_items_api_admin_schedule_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/api__admin__schemas__ScheduleItemOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Schedule Items Api Admin Schedule Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Создать элемент расписания",
+        "description": "Создает новый элемент расписания. Доступно только администратору.",
+        "operationId": "create_schedule_item_api_admin_schedule_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleItemCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api__admin__schemas__ScheduleItemOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ]
+      }
+    },
+    "/api/admin/groups/{group_id}/schedule": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Получить расписание группы",
+        "description": "Возвращает все элементы расписания для конкретной группы. Доступно только администратору.",
+        "operationId": "list_group_schedule_items_api_admin_groups__group_id__schedule_get",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/api__admin__schemas__ScheduleItemOut"
+                  },
+                  "title": "Response List Group Schedule Items Api Admin Groups  Group Id  Schedule Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/schedule/{schedule_item_id}": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Получить элемент расписания по ID",
+        "description": "Возвращает элемент расписания по идентификатору. Доступно только администратору.",
+        "operationId": "get_schedule_item_api_admin_schedule__schedule_item_id__get",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "schedule_item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Schedule Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api__admin__schemas__ScheduleItemOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Обновить элемент расписания",
+        "description": "Частично обновляет элемент расписания. Доступно только администратору.",
+        "operationId": "update_schedule_item_api_admin_schedule__schedule_item_id__patch",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "schedule_item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Schedule Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleItemUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/api__admin__schemas__ScheduleItemOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Удалить элемент расписания",
+        "description": "Удаляет элемент расписания по идентификатору. Доступно только администратору.",
+        "operationId": "delete_schedule_item_api_admin_schedule__schedule_item_id__delete",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "schedule_item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Schedule Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notes": {
+      "get": {
+        "tags": ["Notes"],
+        "summary": "Получить заметки текущего пользователя",
+        "description": "Возвращает заметки текущего пользователя. Можно отфильтровать по занятию через schedule_item_id.",
+        "operationId": "list_notes_api_notes_get",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "schedule_item_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Schedule Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NoteOut"
+                  },
+                  "title": "Response List Notes Api Notes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Notes"],
+        "summary": "Создать заметку",
+        "description": "Создает заметку текущего пользователя для занятия. Преподаватель может иметь две заметки на занятие: публичную и приватную.",
+        "operationId": "create_note_api_notes_post",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notes/{note_id}": {
+      "get": {
+        "tags": ["Notes"],
+        "summary": "Получить заметку по ID",
+        "description": "Возвращает заметку текущего пользователя по идентификатору.",
+        "operationId": "get_note_api_notes__note_id__get",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "note_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Note Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Notes"],
+        "summary": "Обновить заметку",
+        "description": "Частично обновляет заметку текущего пользователя. Для преподавателя учитывается ограничение на одну публичную и одну приватную заметку на занятие.",
+        "operationId": "update_note_api_notes__note_id__patch",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "note_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Note Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Notes"],
+        "summary": "Удалить заметку",
+        "description": "Удаляет заметку текущего пользователя по идентификатору.",
+        "operationId": "delete_note_api_notes__note_id__delete",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "note_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Note Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/schedule": {
+      "get": {
+        "tags": ["Schedule"],
+        "summary": "Получить расписание пользователя",
+        "description": "Возвращает расписание на день для текущего пользователя: студенту по его группе, преподавателю по его занятиям.",
+        "operationId": "get_schedule_api_schedule_get",
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/api__schedule__schemas__ScheduleItemOut"
+                  },
+                  "title": "Response Get Schedule Api Schedule Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/schedule/week/current": {
+      "get": {
+        "tags": ["Schedule"],
+        "summary": "Получить расписание пользователя на текущую неделю",
+        "description": "Возвращает расписание текущего пользователя на текущую неделю с понедельника по воскресенье.",
+        "operationId": "get_current_week_schedule_api_schedule_week_current_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ScheduleDayOut"
+                  },
+                  "type": "array",
+                  "title": "Response Get Current Week Schedule Api Schedule Week Current Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Access token cookie": []
+          }
+        ]
+      }
+    },
+    "/healthcheck": {
+      "get": {
+        "tags": ["Healthcheck"],
+        "summary": "Проверка работоспособности сервера",
+        "description": "Возвращает статус сервера, чтобы убедиться, что приложение запущено и отвечает.",
+        "operationId": "healthcheck_healthcheck_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "GroupCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": ["name"],
+        "title": "GroupCreate"
+      },
+      "GroupOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": ["id", "name"],
+        "title": "GroupOut"
+      },
+      "GroupUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "title": "GroupUpdate"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "NoteCreate": {
+        "properties": {
+          "schedule_item_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Schedule Item Id"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "private": {
+            "type": "boolean",
+            "title": "Private",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": ["schedule_item_id", "text"],
+        "title": "NoteCreate"
+      },
+      "NoteOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "author_id": {
+            "type": "integer",
+            "title": "Author Id"
+          },
+          "schedule_item_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule Item Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "private": {
+            "type": "boolean",
+            "title": "Private"
+          }
+        },
+        "type": "object",
+        "required": ["id", "author_id", "schedule_item_id", "text", "private"],
+        "title": "NoteOut"
+      },
+      "NoteUpdate": {
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "private": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Private"
+          }
+        },
+        "type": "object",
+        "title": "NoteUpdate"
+      },
+      "ScheduleDayOut": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "day_of_week": {
+            "type": "integer",
+            "title": "Day Of Week"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/api__schedule__schemas__ScheduleItemOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": ["date", "day_of_week", "items"],
+        "title": "ScheduleDayOut"
+      },
+      "ScheduleItemCreate": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "group_id": {
+            "type": "integer",
+            "title": "Group Id"
+          },
+          "teacher_id": {
+            "type": "integer",
+            "title": "Teacher Id"
+          },
+          "day_of_week": {
+            "type": "integer",
+            "maximum": 7,
+            "minimum": 1,
+            "title": "Day Of Week"
+          },
+          "pair_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Pair Number"
+          },
+          "week_type": {
+            "type": "string",
+            "enum": ["odd", "even", "both"],
+            "title": "Week Type",
+            "default": "both"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Start Time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "time",
+            "title": "End Time"
+          },
+          "date_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Date From"
+          },
+          "date_to": {
+            "type": "string",
+            "format": "date",
+            "title": "Date To"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "group_id",
+          "teacher_id",
+          "day_of_week",
+          "pair_number",
+          "start_time",
+          "end_time",
+          "date_from",
+          "date_to"
+        ],
+        "title": "ScheduleItemCreate"
+      },
+      "ScheduleItemUpdate": {
+        "properties": {
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
+          "teacher_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Teacher Id"
+          },
+          "day_of_week": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 7,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Day Of Week"
+          },
+          "pair_number": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pair Number"
+          },
+          "week_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["odd", "even", "both"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Type"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
+          "date_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date From"
+          },
+          "date_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date To"
+          }
+        },
+        "type": "object",
+        "title": "ScheduleItemUpdate"
+      },
+      "TokenInfo": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type"
+          }
+        },
+        "type": "object",
+        "required": ["access_token", "token_type"],
+        "title": "TokenInfo"
+      },
+      "UserCreate": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "default"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          }
+        },
+        "type": "object",
+        "required": ["username", "password", "name"],
+        "title": "UserCreate"
+      },
+      "UserLogin": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": ["username", "password"],
+        "title": "UserLogin"
+      },
+      "UserOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          }
+        },
+        "type": "object",
+        "required": ["id", "username", "name", "role", "group_id"],
+        "title": "UserOut"
+      },
+      "UserSchema": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          }
+        },
+        "type": "object",
+        "required": ["id", "username", "name", "role"],
+        "title": "UserSchema"
+      },
+      "UserUpdate": {
+        "properties": {
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          }
+        },
+        "type": "object",
+        "title": "UserUpdate"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": ["loc", "msg", "type"],
+        "title": "ValidationError"
+      },
+      "api__admin__schemas__ScheduleItemOut": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "group_id": {
+            "type": "integer",
+            "title": "Group Id"
+          },
+          "teacher_id": {
+            "type": "integer",
+            "title": "Teacher Id"
+          },
+          "day_of_week": {
+            "type": "integer",
+            "maximum": 7,
+            "minimum": 1,
+            "title": "Day Of Week"
+          },
+          "pair_number": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Pair Number"
+          },
+          "week_type": {
+            "type": "string",
+            "enum": ["odd", "even", "both"],
+            "title": "Week Type",
+            "default": "both"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Start Time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "time",
+            "title": "End Time"
+          },
+          "date_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Date From"
+          },
+          "date_to": {
+            "type": "string",
+            "format": "date",
+            "title": "Date To"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "group_id",
+          "teacher_id",
+          "day_of_week",
+          "pair_number",
+          "start_time",
+          "end_time",
+          "date_from",
+          "date_to",
+          "id"
+        ],
+        "title": "ScheduleItemOut"
+      },
+      "api__schedule__schemas__ScheduleItemOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "group_id": {
+            "type": "integer",
+            "title": "Group Id"
+          },
+          "group_name": {
+            "type": "string",
+            "title": "Group Name"
+          },
+          "teacher_name": {
+            "type": "string",
+            "title": "Teacher Name"
+          },
+          "day_of_week": {
+            "type": "integer",
+            "title": "Day Of Week"
+          },
+          "pair_number": {
+            "type": "integer",
+            "title": "Pair Number"
+          },
+          "week_type": {
+            "type": "string",
+            "title": "Week Type"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Start Time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "time",
+            "title": "End Time"
+          },
+          "date_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Date From"
+          },
+          "date_to": {
+            "type": "string",
+            "format": "date",
+            "title": "Date To"
+          },
+          "user_notes": {
+            "items": {
+              "$ref": "#/components/schemas/NoteOut"
+            },
+            "type": "array",
+            "title": "User Notes"
+          },
+          "teacher_notes": {
+            "items": {
+              "$ref": "#/components/schemas/NoteOut"
+            },
+            "type": "array",
+            "title": "Teacher Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "subject",
+          "group_id",
+          "group_name",
+          "teacher_name",
+          "day_of_week",
+          "pair_number",
+          "week_type",
+          "start_time",
+          "end_time",
+          "date_from",
+          "date_to"
+        ],
+        "title": "ScheduleItemOut"
+      }
+    },
+    "securitySchemes": {
+      "Access token cookie": {
+        "type": "apiKey",
+        "description": "JWT access token stored in HttpOnly cookie `access_token`.",
+        "in": "cookie",
+        "name": "access_token"
+      }
+    }
+  }
+}
