@@ -206,5 +206,6 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# фронтенд 
+# frontend
+node_modules
 !frontend/**/lib/
