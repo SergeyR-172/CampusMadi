@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 import type { GroupOut, UserCreate, UserOut, UserUpdate } from "#/shared/api";
 import { adminApi } from "#/shared/api";
@@ -16,6 +17,9 @@ const ROLE_LABELS: Record<string, string> = {
   admin: "Администратор",
 };
 
+const usersQueryKey = ["admin", "users"] as const;
+const groupsQueryKey = ["admin", "groups"] as const;
+
 const emptyCreate = (): UserCreate => ({
   username: "",
   password: "",
@@ -25,57 +29,54 @@ const emptyCreate = (): UserCreate => ({
 });
 
 export const AdminUsers = () => {
-  const [users, setUsers] = useState<UserOut[]>([]);
-  const [groups, setGroups] = useState<GroupOut[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const [usersQuery, groupsQuery] = useQueries({
+    queries: [
+      { queryKey: usersQueryKey, queryFn: adminApi.users.list },
+      { queryKey: groupsQueryKey, queryFn: adminApi.groups.list },
+    ],
+  });
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<UserCreate>(emptyCreate());
   const [createError, setCreateError] = useState<string | null>(null);
-  const [createPending, setCreatePending] = useState(false);
 
   const [editUser, setEditUser] = useState<UserOut | null>(null);
   const [editForm, setEditForm] = useState<UserUpdate>({});
   const [editError, setEditError] = useState<string | null>(null);
-  const [editPending, setEditPending] = useState(false);
 
   const [deleteUser, setDeleteUser] = useState<UserOut | null>(null);
-  const [deletePending, setDeletePending] = useState(false);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [u, g] = await Promise.all([adminApi.users.list(), adminApi.groups.list()]);
-      setUsers(u);
-      setGroups(g);
-    } catch {
-      setError("Не удалось загрузить данные");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const invalidateUsers = () =>
+    queryClient.invalidateQueries({ queryKey: usersQueryKey });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreateError(null);
-    setCreatePending(true);
-    try {
-      const newUser = await adminApi.users.create(createForm);
-      setUsers((prev) => [...prev, newUser]);
+  const createMutation = useMutation({
+    mutationFn: (data: UserCreate) => adminApi.users.create(data),
+    onSuccess: () => {
+      invalidateUsers();
       setCreateOpen(false);
       setCreateForm(emptyCreate());
-    } catch {
-      setCreateError("Не удалось создать пользователя");
-    } finally {
-      setCreatePending(false);
-    }
-  };
+    },
+    onError: () => setCreateError("Не удалось создать пользователя"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (vars: { id: number; data: UserUpdate }) =>
+      adminApi.users.update(vars.id, vars.data),
+    onSuccess: () => {
+      invalidateUsers();
+      setEditUser(null);
+    },
+    onError: () => setEditError("Не удалось обновить пользователя"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => adminApi.users.delete(id),
+    onSuccess: () => {
+      invalidateUsers();
+      setDeleteUser(null);
+    },
+  });
 
   const openEdit = (user: UserOut) => {
     setEditUser(user);
@@ -88,35 +89,28 @@ export const AdminUsers = () => {
     setEditError(null);
   };
 
-  const handleEdit = async (e: React.FormEvent) => {
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError(null);
+    createMutation.mutate(createForm);
+  };
+
+  const handleEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editUser) return;
     setEditError(null);
-    setEditPending(true);
-    try {
-      const updated = await adminApi.users.update(editUser.id, editForm);
-      setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-      setEditUser(null);
-    } catch {
-      setEditError("Не удалось обновить пользователя");
-    } finally {
-      setEditPending(false);
-    }
+    updateMutation.mutate({ id: editUser.id, data: editForm });
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteUser) return;
-    setDeletePending(true);
-    try {
-      await adminApi.users.delete(deleteUser.id);
-      setUsers((prev) => prev.filter((u) => u.id !== deleteUser.id));
-      setDeleteUser(null);
-    } catch {
-      // ignore
-    } finally {
-      setDeletePending(false);
-    }
+    deleteMutation.mutate(deleteUser.id);
   };
+
+  const users = usersQuery.data ?? [];
+  const groups = groupsQuery.data ?? [];
+  const isLoading = usersQuery.isPending || groupsQuery.isPending;
+  const isError = usersQuery.isError || groupsQuery.isError;
 
   const groupName = (id: number | null) =>
     id ? (groups.find((g) => g.id === id)?.name ?? String(id)) : "—";
@@ -140,9 +134,9 @@ export const AdminUsers = () => {
       </div>
 
       {isLoading && <p className="text-[#8a8c8f]">Загрузка...</p>}
-      {error && <p className="text-[#e96466]">{error}</p>}
+      {isError && <p className="text-[#e96466]">Не удалось загрузить данные</p>}
 
-      {!isLoading && !error && (
+      {!isLoading && !isError && (
         <div className="overflow-hidden rounded-xl bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead className="border-b bg-gray-50 text-[#8a8c8f]">
@@ -225,10 +219,10 @@ export const AdminUsers = () => {
           {createError && <p className="text-sm text-[#e96466]">{createError}</p>}
           <button
             type="submit"
-            disabled={createPending}
+            disabled={createMutation.isPending}
             className="mt-2 rounded-lg bg-brand py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
           >
-            {createPending ? "Создание..." : "Создать"}
+            {createMutation.isPending ? "Создание..." : "Создать"}
           </button>
         </form>
       </Modal>
@@ -265,10 +259,10 @@ export const AdminUsers = () => {
           {editError && <p className="text-sm text-[#e96466]">{editError}</p>}
           <button
             type="submit"
-            disabled={editPending}
+            disabled={updateMutation.isPending}
             className="mt-2 rounded-lg bg-brand py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
           >
-            {editPending ? "Сохранение..." : "Сохранить"}
+            {updateMutation.isPending ? "Сохранение..." : "Сохранить"}
           </button>
         </form>
       </Modal>
@@ -287,10 +281,10 @@ export const AdminUsers = () => {
           </button>
           <button
             onClick={handleDelete}
-            disabled={deletePending}
+            disabled={deleteMutation.isPending}
             className="flex-1 rounded-lg bg-[#e96466] py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
           >
-            {deletePending ? "Удаление..." : "Удалить"}
+            {deleteMutation.isPending ? "Удаление..." : "Удалить"}
           </button>
         </div>
       </Modal>

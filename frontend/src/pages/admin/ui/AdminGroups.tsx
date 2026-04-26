@@ -1,58 +1,58 @@
-import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 import type { GroupOut } from "#/shared/api";
 import { adminApi } from "#/shared/api";
 import { Modal } from "#/shared/ui";
 
+const groupsQueryKey = ["admin", "groups"] as const;
+
 export const AdminGroups = () => {
-  const [groups, setGroups] = useState<GroupOut[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const groupsQuery = useQuery({
+    queryKey: groupsQueryKey,
+    queryFn: adminApi.groups.list,
+  });
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
-  const [createPending, setCreatePending] = useState(false);
 
   const [editGroup, setEditGroup] = useState<GroupOut | null>(null);
   const [editName, setEditName] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
-  const [editPending, setEditPending] = useState(false);
 
   const [deleteGroup, setDeleteGroup] = useState<GroupOut | null>(null);
-  const [deletePending, setDeletePending] = useState(false);
 
-  const loadGroups = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      setGroups(await adminApi.groups.list());
-    } catch {
-      setError("Не удалось загрузить группы");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: groupsQueryKey });
 
-  useEffect(() => {
-    loadGroups();
-  }, []);
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreateError(null);
-    setCreatePending(true);
-    try {
-      const group = await adminApi.groups.create({ name: createName });
-      setGroups((prev) => [...prev, group]);
+  const createMutation = useMutation({
+    mutationFn: (name: string) => adminApi.groups.create({ name }),
+    onSuccess: () => {
+      invalidate();
       setCreateOpen(false);
       setCreateName("");
-    } catch {
-      setCreateError("Не удалось создать группу");
-    } finally {
-      setCreatePending(false);
-    }
-  };
+    },
+    onError: () => setCreateError("Не удалось создать группу"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (vars: { id: number; name: string }) =>
+      adminApi.groups.update(vars.id, { name: vars.name }),
+    onSuccess: () => {
+      invalidate();
+      setEditGroup(null);
+    },
+    onError: () => setEditError("Не удалось обновить группу"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => adminApi.groups.delete(id),
+    onSuccess: () => {
+      invalidate();
+      setDeleteGroup(null);
+    },
+  });
 
   const openEdit = (g: GroupOut) => {
     setEditGroup(g);
@@ -60,35 +60,25 @@ export const AdminGroups = () => {
     setEditError(null);
   };
 
-  const handleEdit = async (e: React.FormEvent) => {
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError(null);
+    createMutation.mutate(createName);
+  };
+
+  const handleEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editGroup) return;
     setEditError(null);
-    setEditPending(true);
-    try {
-      const updated = await adminApi.groups.update(editGroup.id, { name: editName });
-      setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
-      setEditGroup(null);
-    } catch {
-      setEditError("Не удалось обновить группу");
-    } finally {
-      setEditPending(false);
-    }
+    updateMutation.mutate({ id: editGroup.id, name: editName });
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteGroup) return;
-    setDeletePending(true);
-    try {
-      await adminApi.groups.delete(deleteGroup.id);
-      setGroups((prev) => prev.filter((g) => g.id !== deleteGroup.id));
-      setDeleteGroup(null);
-    } catch {
-      // ignore
-    } finally {
-      setDeletePending(false);
-    }
+    deleteMutation.mutate(deleteGroup.id);
   };
+
+  const groups = groupsQuery.data ?? [];
 
   return (
     <div className="p-8">
@@ -108,10 +98,10 @@ export const AdminGroups = () => {
         </button>
       </div>
 
-      {isLoading && <p className="text-[#8a8c8f]">Загрузка...</p>}
-      {error && <p className="text-[#e96466]">{error}</p>}
+      {groupsQuery.isPending && <p className="text-[#8a8c8f]">Загрузка...</p>}
+      {groupsQuery.isError && <p className="text-[#e96466]">Не удалось загрузить группы</p>}
 
-      {!isLoading && !error && (
+      {groupsQuery.isSuccess && (
         <div className="overflow-hidden rounded-xl bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead className="border-b bg-gray-50 text-[#8a8c8f]">
@@ -171,10 +161,10 @@ export const AdminGroups = () => {
           {createError && <p className="text-sm text-[#e96466]">{createError}</p>}
           <button
             type="submit"
-            disabled={createPending}
+            disabled={createMutation.isPending}
             className="mt-2 rounded-lg bg-brand py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
           >
-            {createPending ? "Создание..." : "Создать"}
+            {createMutation.isPending ? "Создание..." : "Создать"}
           </button>
         </form>
       </Modal>
@@ -195,10 +185,10 @@ export const AdminGroups = () => {
           {editError && <p className="text-sm text-[#e96466]">{editError}</p>}
           <button
             type="submit"
-            disabled={editPending}
+            disabled={updateMutation.isPending}
             className="mt-2 rounded-lg bg-brand py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
           >
-            {editPending ? "Сохранение..." : "Сохранить"}
+            {updateMutation.isPending ? "Сохранение..." : "Сохранить"}
           </button>
         </form>
       </Modal>
@@ -217,10 +207,10 @@ export const AdminGroups = () => {
           </button>
           <button
             onClick={handleDelete}
-            disabled={deletePending}
+            disabled={deleteMutation.isPending}
             className="flex-1 rounded-lg bg-[#e96466] py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
           >
-            {deletePending ? "Удаление..." : "Удалить"}
+            {deleteMutation.isPending ? "Удаление..." : "Удалить"}
           </button>
         </div>
       </Modal>

@@ -1,27 +1,22 @@
-import { useEffect, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 
-import { useAuthStore } from "#/entities/user";
-import type { AdminScheduleItemOut, GroupOut, UserOut } from "#/shared/api";
+import { useCurrentUser } from "#/entities/user";
 import { adminApi } from "#/shared/api";
 
 export const AdminDashboard = () => {
-  const user = useAuthStore((s) => s.user);
-  const [stats, setStats] = useState<{
-    users: UserOut[];
-    groups: GroupOut[];
-    schedule: AdminScheduleItemOut[];
-  } | null>(null);
-
-  useEffect(() => {
-    Promise.all([adminApi.users.list(), adminApi.groups.list(), adminApi.schedule.list()])
-      .then(([users, groups, schedule]) => setStats({ users, groups, schedule }))
-      .catch(() => null);
-  }, []);
+  const { user } = useCurrentUser();
+  const [usersQ, groupsQ, scheduleQ] = useQueries({
+    queries: [
+      { queryKey: ["admin", "users"], queryFn: adminApi.users.list },
+      { queryKey: ["admin", "groups"], queryFn: adminApi.groups.list },
+      { queryKey: ["admin", "schedule"], queryFn: adminApi.schedule.list },
+    ],
+  });
 
   const cards = [
-    { label: "Пользователей", value: stats?.users.length ?? "—" },
-    { label: "Групп", value: stats?.groups.length ?? "—" },
-    { label: "Занятий в расписании", value: stats?.schedule.length ?? "—" },
+    { label: "Пользователей", value: usersQ.data?.length ?? "—" },
+    { label: "Групп", value: groupsQ.data?.length ?? "—" },
+    { label: "Занятий в расписании", value: scheduleQ.data?.length ?? "—" },
   ];
 
   return (

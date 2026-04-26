@@ -1,9 +1,8 @@
 import appCss from "@app/styles/global.css?url";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
-import { useEffect } from "react";
 
-import { useAuthStore } from "#/entities/user";
-import { authApi } from "#/shared/api";
+import { queryClient } from "#/shared/api";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -19,32 +18,17 @@ export const Route = createRootRoute({
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 function RootComponent() {
-  const setUser = useAuthStore((s) => s.setUser);
-  const setLoading = useAuthStore((s) => s.setLoading);
-
-  useEffect(() => {
-    authApi
-      .me()
-      .then((user) => {
-        setUser(user);
-      })
-      .catch(() => {
-        setUser(null);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [setUser, setLoading]);
-
   return (
-    <html lang="ru" suppressHydrationWarning>
-      <head>
-        <HeadContent />
-      </head>
-      <body className="min-h-screen font-sans antialiased">
-        <Outlet />
-        <Scripts />
-      </body>
-    </html>
+    <QueryClientProvider client={queryClient}>
+      <html lang="ru" suppressHydrationWarning>
+        <head>
+          <HeadContent />
+        </head>
+        <body className="min-h-screen font-sans antialiased">
+          <Outlet />
+          <Scripts />
+        </body>
+      </html>
+    </QueryClientProvider>
   );
 }

@@ -1,14 +1,13 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { useAuthStore } from "#/entities/user";
 import { LoginForm } from "#/features/auth";
+import type { UserSchema } from "#/shared/api";
 
 export const LoginPage = () => {
   const navigate = useNavigate();
 
-  const handleSuccess = () => {
-    const role = useAuthStore.getState().user?.role;
-    if (role === "admin") {
+  const handleSuccess = (user: UserSchema) => {
+    if (user.role === "admin") {
       navigate({ to: "/admin" });
     } else {
       navigate({ to: "/" });

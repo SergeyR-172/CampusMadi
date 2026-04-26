@@ -1,12 +1,12 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { useAuthStore } from "#/entities/user";
+import { meQueryOptions } from "#/entities/user";
 import { HomePage } from "#/pages/home/index.ts";
+import { queryClient } from "#/shared/api";
 
 export const Route = createFileRoute("/")({
-  beforeLoad: () => {
-    const { user, isLoading } = useAuthStore.getState();
-    if (isLoading) return;
+  beforeLoad: async () => {
+    const user = await queryClient.ensureQueryData(meQueryOptions);
     if (!user) {
       throw redirect({ to: "/login" });
     }

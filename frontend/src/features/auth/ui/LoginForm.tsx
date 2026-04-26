@@ -1,40 +1,46 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { useAuthStore } from "#/entities/user";
+import { userKeys } from "#/entities/user";
+import type { UserSchema } from "#/shared/api";
 import { ApiError, authApi } from "#/shared/api";
 import { cn } from "#/shared/lib";
 
 type Props = {
-  onSuccess: () => void;
+  onSuccess: (user: UserSchema) => void;
 };
 
 export const LoginForm = ({ onSuccess }: Props) => {
-  const setUser = useAuthStore((s) => s.setUser);
+  const queryClient = useQueryClient();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isPending, setIsPending] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsPending(true);
-
-    try {
-      await authApi.login({ username, password });
-      const user = await authApi.me();
-      setUser(user);
-      onSuccess();
-    } catch (err) {
+  const loginMutation = useMutation({
+    mutationFn: async (creds: { username: string; password: string }) => {
+      await authApi.login(creds);
+      return authApi.me();
+    },
+    onSuccess: (user) => {
+      queryClient.setQueryData(userKeys.me, user);
+      onSuccess(user);
+    },
+    onError: (err) => {
       if (err instanceof ApiError && err.status === 401) {
         setError("Неверный логин или пароль");
       } else {
         setError("Ошибка сервера. Попробуйте позже.");
       }
-    } finally {
-      setIsPending(false);
-    }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    loginMutation.mutate({ username, password });
   };
+
+  const isPending = loginMutation.isPending;
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">

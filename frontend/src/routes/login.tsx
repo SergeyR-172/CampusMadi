@@ -1,11 +1,12 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { useAuthStore } from "#/entities/user";
+import { meQueryOptions } from "#/entities/user";
 import { LoginPage } from "#/pages/login";
+import { queryClient } from "#/shared/api";
 
 export const Route = createFileRoute("/login")({
-  beforeLoad: () => {
-    const { user } = useAuthStore.getState();
+  beforeLoad: async () => {
+    const user = await queryClient.ensureQueryData(meQueryOptions);
     if (user) {
       throw redirect({ to: user.role === "admin" ? "/admin" : "/" });
     }

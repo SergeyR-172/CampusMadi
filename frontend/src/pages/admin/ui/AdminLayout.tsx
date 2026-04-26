@@ -1,6 +1,7 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 
-import { useAuthStore } from "#/entities/user";
+import { useCurrentUser, userKeys } from "#/entities/user";
 import { authApi } from "#/shared/api";
 import { cn } from "#/shared/lib";
 
@@ -12,19 +13,19 @@ const NAV_ITEMS = [
 ] as const;
 
 export const AdminLayout = () => {
-  const user = useAuthStore((s) => s.user);
-  const setUser = useAuthStore((s) => s.setUser);
+  const { user } = useCurrentUser();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const location = useRouterState({ select: (s) => s.location.pathname });
 
-  const handleLogout = async () => {
-    try {
-      await authApi.logout();
-    } finally {
-      setUser(null);
+  const logoutMutation = useMutation({
+    mutationFn: () => authApi.logout(),
+    onSettled: async () => {
+      queryClient.setQueryData(userKeys.me, null);
+      await queryClient.invalidateQueries();
       navigate({ to: "/login" });
-    }
-  };
+    },
+  });
 
   return (
     <div className="flex min-h-screen">
@@ -66,8 +67,9 @@ export const AdminLayout = () => {
         <div className="border-t border-white/20 px-4 py-4">
           <p className="mb-2 truncate text-sm text-white/80">{user?.name}</p>
           <button
-            onClick={handleLogout}
-            className="w-full rounded-lg px-4 py-2 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            onClick={() => logoutMutation.mutate()}
+            disabled={logoutMutation.isPending}
+            className="w-full rounded-lg px-4 py-2 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-60"
           >
             Выйти
           </button>

@@ -71,3 +71,124 @@
 
 - `func-style` отключён
 - `@typescript-eslint/naming-convention` отключён
+
+---
+
+## Управление состоянием и работа с данными
+
+### Принцип разделения
+
+| Тип состояния              | Инструмент      | Что хранить                                                      |
+| -------------------------- | --------------- | ---------------------------------------------------------------- |
+| **Серверное состояние**    | TanStack Query  | Всё, что приходит с бэкенда: пользователь, расписание, заметки   |
+| **Глобальный UI-стейт**    | Zustand         | Только UI: открытость глобальных модалок, тема, флаги интерфейса |
+| **Локальный UI-стейт**     | `useState`      | Состояние одного компонента: input, локальная модалка, hover     |
+| **Состояние формы**        | `useState` (или `react-hook-form` при росте сложности) | Поля формы, валидационные ошибки                  |
+
+> **Запрещено** хранить серверные данные в Zustand или дублировать их туда вручную.
+> Источник правды для серверных данных — кэш TanStack Query (`queryClient`).
+
+### Где живёт TanStack Query
+
+- `QueryClient` создаётся в `src/shared/api/queryClient.ts` и экспортируется через `#/shared/api`
+- `QueryClientProvider` оборачивает приложение в `src/routes/__root.tsx`
+- Дефолты: `staleTime: 60s`, `retry: 1`, `refetchOnWindowFocus: false`
+
+### Где описывать query-хуки
+
+Каждая сущность (FSD-слой `entities/<name>`) или фича (`features/<name>`) объявляет свои query/mutation-хуки в подпапке `model/`:
+
+```
+entities/user/
+├── model/
+│   └── queries.ts   ← useCurrentUser, meQueryOptions, userKeys
+└── index.ts         ← реэкспорт публичного API
+```
+
+`queryOptions(...)` используется, когда тот же набор опций нужен и в `useQuery`, и в `queryClient.ensureQueryData` (например, в `beforeLoad` роутов).
+
+### Соглашения по `queryKey`
+
+- Иерархический массив: `[<scope>, <entity>, ...<filters>]`
+- Примеры:
+  - `["user", "me"]` — текущий пользователь
+  - `["admin", "users"]` — список пользователей в админке
+  - `["admin", "groups"]`, `["admin", "schedule"]`, `["admin", "teachers"]`
+  - `["schedule", "week", "current"]`, `["notes", { schedule_item_id: 42 }]`
+- Для часто переиспользуемых ключей объявлять объект-фабрику (`userKeys.me`, `userKeys.byId(id)`) рядом с query-хуками
+
+### Сценарий: получение данных
+
+```ts
+// entities/user/model/queries.ts
+export const useCurrentUser = () => {
+  const q = useQuery(meQueryOptions);
+  return { user: q.data ?? null, isLoading: q.isPending, isError: q.isError };
+};
+
+// в компоненте:
+const { user, isLoading } = useCurrentUser();
+```
+
+**Правила:**
+
+- Компонент **не вызывает** `apiClient`/`*Api` напрямую для чтения. Только через `useQuery`/`useQueries` или query-хук.
+- Никаких `useEffect(() => { fetch() }, [])` + `useState` для серверных данных — это ручной кэш в обход Query.
+- Не копировать `query.data` в локальный `useState` — компонент должен читать прямо из результата хука.
+
+### Сценарий: предзагрузка в роуте (TanStack Router)
+
+```ts
+// src/routes/admin.tsx
+beforeLoad: async () => {
+  const user = await queryClient.ensureQueryData(meQueryOptions);
+  if (!user) throw redirect({ to: "/login" });
+  if (user.role !== "admin") throw redirect({ to: "/" });
+},
+```
+
+`ensureQueryData` использует тот же кэш, что и `useQuery` в компоненте — повторного запроса не будет.
+
+### Сценарий: отправка данных (мутации)
+
+```ts
+const queryClient = useQueryClient();
+const createMutation = useMutation({
+  mutationFn: (data: GroupCreate) => adminApi.groups.create(data),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["admin", "groups"] });
+  },
+  onError: () => setLocalError("Не удалось создать группу"),
+});
+
+// триггер:
+createMutation.mutate(formData);
+```
+
+**Правила:**
+
+- После успешной мутации — **инвалидация** соответствующих query (`invalidateQueries`), а не ручное `setState((prev) => [...])` в локальном кэше.
+- `mutation.isPending` использовать для дизейбла кнопки. Свой `useState("isPending")` не заводить.
+- Если мутация возвращает обновлённую сущность и список перезапрашивать дорого — допустимо `queryClient.setQueryData(key, updater)` как оптимизация.
+
+### Сценарий: вход / выход
+
+- **Логин** — `useMutation` с `mutationFn = login + me`. В `onSuccess` записываем результат в кэш через `queryClient.setQueryData(userKeys.me, user)` — это сразу даёт авторизованную сессию без повторного запроса `/me`.
+- **Логаут** — `useMutation(authApi.logout)`. В `onSettled` очищаем `userKeys.me` (`setQueryData(..., null)`) и вызываем `invalidateQueries()` для сброса всех серверных данных, затем редирект на `/login`.
+
+### Когда нужен Zustand
+
+Сейчас в проекте Zustand-стора нет — вся серверка покрыта Query, локальные UI-флаги покрываются `useState`. Заводить Zustand-стор оправдано, только если состояние:
+
+1. **Чисто UI-шное** (не приходит с бэкенда и не отправляется на бэкенд)
+2. **Глобальное** (нужно нескольким несвязанным компонентам, проброс через пропсы/контекст неудобен)
+3. **Долгоживущее** (переживает размонтирование инициатора)
+
+Примеры допустимых сторов: тема оформления, открытость глобальной command-palette, развёрнутость сайдбара. Стор размещается в соответствующем FSD-слое (`entities/<name>/model/store.ts` или `features/<name>/model/store.ts`).
+
+### Чек-лист перед добавлением состояния
+
+1. Эти данные приходят с сервера? → **TanStack Query**, не Zustand и не `useState`.
+2. Это локальный UI-стейт одного компонента? → **`useState`**.
+3. Это UI-стейт, нужный нескольким компонентам? → подняться по дереву; если неудобно — **Zustand**.
+4. Это форма? → `useState`/`react-hook-form`. После сабмита — мутация.

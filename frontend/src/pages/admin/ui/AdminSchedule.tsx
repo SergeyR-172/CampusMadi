@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 import type {
   AdminScheduleItemOut,
-  GroupOut,
   ScheduleItemCreate,
   ScheduleItemUpdate,
-  UserOut,
   WeekType,
 } from "#/shared/api";
 import { adminApi } from "#/shared/api";
@@ -17,6 +16,10 @@ const WEEK_TYPE_LABELS: Record<WeekType, string> = {
   odd: "Нечётная",
   even: "Чётная",
 };
+
+const scheduleQueryKey = ["admin", "schedule"] as const;
+const groupsQueryKey = ["admin", "groups"] as const;
+const teachersQueryKey = ["admin", "teachers"] as const;
 
 const emptyCreate = (): ScheduleItemCreate => ({
   subject: "",
@@ -32,63 +35,55 @@ const emptyCreate = (): ScheduleItemCreate => ({
 });
 
 export const AdminSchedule = () => {
-  const [items, setItems] = useState<AdminScheduleItemOut[]>([]);
-  const [groups, setGroups] = useState<GroupOut[]>([]);
-  const [teachers, setTeachers] = useState<UserOut[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const [scheduleQuery, groupsQuery, teachersQuery] = useQueries({
+    queries: [
+      { queryKey: scheduleQueryKey, queryFn: adminApi.schedule.list },
+      { queryKey: groupsQueryKey, queryFn: adminApi.groups.list },
+      { queryKey: teachersQueryKey, queryFn: adminApi.teachers.list },
+    ],
+  });
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<ScheduleItemCreate>(emptyCreate());
   const [createError, setCreateError] = useState<string | null>(null);
-  const [createPending, setCreatePending] = useState(false);
 
   const [editItem, setEditItem] = useState<AdminScheduleItemOut | null>(null);
   const [editForm, setEditForm] = useState<ScheduleItemUpdate>({});
   const [editError, setEditError] = useState<string | null>(null);
-  const [editPending, setEditPending] = useState(false);
 
   const [deleteItem, setDeleteItem] = useState<AdminScheduleItemOut | null>(null);
-  const [deletePending, setDeletePending] = useState(false);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [s, g, t] = await Promise.all([
-        adminApi.schedule.list(),
-        adminApi.groups.list(),
-        adminApi.teachers.list(),
-      ]);
-      setItems(s);
-      setGroups(g);
-      setTeachers(t);
-    } catch {
-      setError("Не удалось загрузить данные");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: scheduleQueryKey });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreateError(null);
-    setCreatePending(true);
-    try {
-      const item = await adminApi.schedule.create(createForm);
-      setItems((prev) => [...prev, item]);
+  const createMutation = useMutation({
+    mutationFn: (data: ScheduleItemCreate) => adminApi.schedule.create(data),
+    onSuccess: () => {
+      invalidate();
       setCreateOpen(false);
       setCreateForm(emptyCreate());
-    } catch {
-      setCreateError("Не удалось создать занятие");
-    } finally {
-      setCreatePending(false);
-    }
-  };
+    },
+    onError: () => setCreateError("Не удалось создать занятие"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (vars: { id: number; data: ScheduleItemUpdate }) =>
+      adminApi.schedule.update(vars.id, vars.data),
+    onSuccess: () => {
+      invalidate();
+      setEditItem(null);
+    },
+    onError: () => setEditError("Не удалось обновить занятие"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => adminApi.schedule.delete(id),
+    onSuccess: () => {
+      invalidate();
+      setDeleteItem(null);
+    },
+  });
 
   const openEdit = (item: AdminScheduleItemOut) => {
     setEditItem(item);
@@ -107,38 +102,35 @@ export const AdminSchedule = () => {
     setEditError(null);
   };
 
-  const handleEdit = async (e: React.FormEvent) => {
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError(null);
+    createMutation.mutate(createForm);
+  };
+
+  const handleEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editItem) return;
     setEditError(null);
-    setEditPending(true);
-    try {
-      const updated = await adminApi.schedule.update(editItem.id, editForm);
-      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-      setEditItem(null);
-    } catch {
-      setEditError("Не удалось обновить занятие");
-    } finally {
-      setEditPending(false);
-    }
+    updateMutation.mutate({ id: editItem.id, data: editForm });
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteItem) return;
-    setDeletePending(true);
-    try {
-      await adminApi.schedule.delete(deleteItem.id);
-      setItems((prev) => prev.filter((i) => i.id !== deleteItem.id));
-      setDeleteItem(null);
-    } catch {
-      // ignore
-    } finally {
-      setDeletePending(false);
-    }
+    deleteMutation.mutate(deleteItem.id);
   };
+
+  const items = scheduleQuery.data ?? [];
+  const groups = groupsQuery.data ?? [];
+  const teachers = teachersQuery.data ?? [];
+  const isLoading =
+    scheduleQuery.isPending || groupsQuery.isPending || teachersQuery.isPending;
+  const isError =
+    scheduleQuery.isError || groupsQuery.isError || teachersQuery.isError;
 
   const groupName = (id: number) => groups.find((g) => g.id === id)?.name ?? String(id);
-  const teacherName = (id: number) => teachers.find((t) => t.id === id)?.name ?? String(id);
+  const teacherName = (id: number) =>
+    teachers.find((t) => t.id === id)?.name ?? String(id);
 
   return (
     <div className="p-8">
@@ -159,9 +151,9 @@ export const AdminSchedule = () => {
       </div>
 
       {isLoading && <p className="text-[#8a8c8f]">Загрузка...</p>}
-      {error && <p className="text-[#e96466]">{error}</p>}
+      {isError && <p className="text-[#e96466]">Не удалось загрузить данные</p>}
 
-      {!isLoading && !error && (
+      {!isLoading && !isError && (
         <div className="overflow-x-auto rounded-xl bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead className="border-b bg-gray-50 text-[#8a8c8f]">
@@ -295,10 +287,10 @@ export const AdminSchedule = () => {
           )}
           <button
             type="submit"
-            disabled={createPending}
+            disabled={createMutation.isPending}
             className="col-span-2 mt-2 rounded-lg bg-brand py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
           >
-            {createPending ? "Создание..." : "Создать"}
+            {createMutation.isPending ? "Создание..." : "Создать"}
           </button>
         </form>
       </Modal>
@@ -377,10 +369,10 @@ export const AdminSchedule = () => {
           {editError && <p className="col-span-2 text-sm text-[#e96466]">{editError}</p>}
           <button
             type="submit"
-            disabled={editPending}
+            disabled={updateMutation.isPending}
             className="col-span-2 mt-2 rounded-lg bg-brand py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
           >
-            {editPending ? "Сохранение..." : "Сохранить"}
+            {updateMutation.isPending ? "Сохранение..." : "Сохранить"}
           </button>
         </form>
       </Modal>
@@ -399,10 +391,10 @@ export const AdminSchedule = () => {
           </button>
           <button
             onClick={handleDelete}
-            disabled={deletePending}
+            disabled={deleteMutation.isPending}
             className="flex-1 rounded-lg bg-[#e96466] py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
           >
-            {deletePending ? "Удаление..." : "Удалить"}
+            {deleteMutation.isPending ? "Удаление..." : "Удалить"}
           </button>
         </div>
       </Modal>

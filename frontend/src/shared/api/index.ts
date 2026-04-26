@@ -2,6 +2,7 @@ export { adminApi } from "./admin";
 export { authApi } from "./auth";
 export { apiClient, ApiError } from "./client";
 export { notesApi } from "./notes";
+export { queryClient } from "./queryClient";
 export { scheduleApi } from "./schedule";
 export type {
   AdminScheduleItemOut,
