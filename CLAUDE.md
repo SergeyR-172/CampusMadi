@@ -1,0 +1,1 @@
+See frontend/CLAUDE.md for frontend rules (Backend/ is read-only).

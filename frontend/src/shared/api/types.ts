@@ -1,5 +1,5 @@
 export type UserRole = "admin" | "teacher" | "default";
-export type WeekType = "odd" | "even" | "both";
+export type WeekType = "odd" | "even" | "both"; // числитель или знаминатель или оба
 
 export type UserSchema = {
   id: number;
@@ -8,6 +8,7 @@ export type UserSchema = {
   role: UserRole;
 };
 
+// тип с постфиксом Out это "выходная схема" — данные, которые API возвращает клиенту в ответе
 export type UserOut = {
   id: number;
   username: string;

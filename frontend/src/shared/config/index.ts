@@ -1,3 +1,8 @@
+const envUrl = import.meta.env["VITE_API_URL"] as string | undefined;
+
 export const config = {
-  baseUrl: (import.meta.env["VITE_API_URL"] as string | undefined) ?? "http://localhost:8000",
+  // SSR: use full URL (no CORS); browser: use relative URL so Vite proxy handles it
+  baseUrl: typeof window === "undefined"
+    ? (envUrl ?? "http://localhost:8000")
+    : (envUrl ?? ""),
 };
