@@ -1,5 +1,5 @@
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import type {
   AdminScheduleItemOut,
@@ -15,6 +15,45 @@ const WEEK_TYPE_LABELS: Record<WeekType, string> = {
   both: "Каждую неделю",
   odd: "Нечётная",
   even: "Чётная",
+};
+
+type ScheduleSort =
+  | "day_pair_asc"
+  | "pair_asc"
+  | "pair_desc"
+  | "time_asc"
+  | "time_desc"
+  | "subject_asc";
+
+type ScheduleFilters = {
+  groupId: string;
+  teacherId: string;
+  dayOfWeek: string;
+  weekType: "all" | "odd_or_both" | "even_or_both" | "odd" | "even" | "both";
+  pairNumber: string;
+  subject: string;
+};
+
+const emptyFilters = (): ScheduleFilters => ({
+  groupId: "",
+  teacherId: "",
+  dayOfWeek: "",
+  weekType: "all",
+  pairNumber: "",
+  subject: "",
+});
+
+const matchesWeekType = (item: AdminScheduleItemOut, f: ScheduleFilters["weekType"]) => {
+  switch (f) {
+    case "all":
+      return true;
+    case "odd_or_both":
+      return item.week_type === "odd" || item.week_type === "both";
+    case "even_or_both":
+      return item.week_type === "even" || item.week_type === "both";
+    default:
+      return item.week_type === f;
+  }
 };
 
 const scheduleQueryKey = ["admin", "schedule"] as const;
@@ -132,6 +171,60 @@ export const AdminSchedule = () => {
   const teacherName = (id: number) =>
     teachers.find((t) => t.id === id)?.name ?? String(id);
 
+  const [filters, setFilters] = useState<ScheduleFilters>(emptyFilters());
+  const [sort, setSort] = useState<ScheduleSort>("day_pair_asc");
+
+  const pairNumbers = useMemo(
+    () => Array.from(new Set(items.map((i) => i.pair_number))).sort((a, b) => a - b),
+    [items],
+  );
+
+  const visibleItems = useMemo(() => {
+    const filtered = items.filter((it) => {
+      if (filters.groupId && it.group_id !== Number(filters.groupId)) return false;
+      if (filters.teacherId && it.teacher_id !== Number(filters.teacherId)) return false;
+      if (filters.dayOfWeek && it.day_of_week !== Number(filters.dayOfWeek)) return false;
+      if (filters.pairNumber && it.pair_number !== Number(filters.pairNumber)) return false;
+      if (!matchesWeekType(it, filters.weekType)) return false;
+      if (
+        filters.subject &&
+        !it.subject.toLowerCase().includes(filters.subject.trim().toLowerCase())
+      )
+        return false;
+      return true;
+    });
+
+    const sorted = [...filtered];
+    const cmpTime = (a: string, b: string) => a.localeCompare(b);
+    sorted.sort((a, b) => {
+      switch (sort) {
+        case "pair_asc":
+          return a.pair_number - b.pair_number || a.day_of_week - b.day_of_week;
+        case "pair_desc":
+          return b.pair_number - a.pair_number || a.day_of_week - b.day_of_week;
+        case "time_asc":
+          return cmpTime(a.start_time, b.start_time);
+        case "time_desc":
+          return cmpTime(b.start_time, a.start_time);
+        case "subject_asc":
+          return a.subject.localeCompare(b.subject, "ru");
+        case "day_pair_asc":
+        default:
+          return a.day_of_week - b.day_of_week || a.pair_number - b.pair_number;
+      }
+    });
+    return sorted;
+  }, [items, filters, sort]);
+
+  const filtersActive =
+    filters.groupId !== "" ||
+    filters.teacherId !== "" ||
+    filters.dayOfWeek !== "" ||
+    filters.pairNumber !== "" ||
+    filters.weekType !== "all" ||
+    filters.subject !== "" ||
+    sort !== "day_pair_asc";
+
   return (
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
@@ -154,7 +247,108 @@ export const AdminSchedule = () => {
       {isError && <p className="text-[#e96466]">Не удалось загрузить данные</p>}
 
       {!isLoading && !isError && (
-        <div className="overflow-x-auto rounded-xl bg-white shadow-sm">
+        <>
+          <div className="mb-4 rounded-xl bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-text">Фильтры и сортировка</p>
+              {filtersActive && (
+                <button
+                  onClick={() => {
+                    setFilters(emptyFilters());
+                    setSort("day_pair_asc");
+                  }}
+                  className="text-sm text-brand hover:underline"
+                >
+                  Сбросить
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+              <FilterSelect
+                label="Группа"
+                value={filters.groupId}
+                onChange={(v) => setFilters((f) => ({ ...f, groupId: v }))}
+                options={[
+                  { value: "", label: "Все группы" },
+                  ...groups.map((g) => ({ value: String(g.id), label: g.name })),
+                ]}
+              />
+              <FilterSelect
+                label="Преподаватель"
+                value={filters.teacherId}
+                onChange={(v) => setFilters((f) => ({ ...f, teacherId: v }))}
+                options={[
+                  { value: "", label: "Все преподаватели" },
+                  ...teachers.map((t) => ({ value: String(t.id), label: t.name })),
+                ]}
+              />
+              <FilterSelect
+                label="День недели"
+                value={filters.dayOfWeek}
+                onChange={(v) => setFilters((f) => ({ ...f, dayOfWeek: v }))}
+                options={[
+                  { value: "", label: "Все дни" },
+                  ...DAY_NAMES.slice(1).map((d, i) => ({
+                    value: String(i + 1),
+                    label: d,
+                  })),
+                ]}
+              />
+              <FilterSelect
+                label="Тип недели"
+                value={filters.weekType}
+                onChange={(v) =>
+                  setFilters((f) => ({ ...f, weekType: v as ScheduleFilters["weekType"] }))
+                }
+                options={[
+                  { value: "all", label: "Любой" },
+                  { value: "odd_or_both", label: "Числитель (вкл. каждую)" },
+                  { value: "even_or_both", label: "Знаменатель (вкл. каждую)" },
+                  { value: "odd", label: "Только числитель" },
+                  { value: "even", label: "Только знаменатель" },
+                  { value: "both", label: "Только каждую неделю" },
+                ]}
+              />
+              <FilterSelect
+                label="Номер пары"
+                value={filters.pairNumber}
+                onChange={(v) => setFilters((f) => ({ ...f, pairNumber: v }))}
+                options={[
+                  { value: "", label: "Все пары" },
+                  ...pairNumbers.map((n) => ({ value: String(n), label: String(n) })),
+                ]}
+              />
+              <FilterSelect
+                label="Сортировка"
+                value={sort}
+                onChange={(v) => setSort(v as ScheduleSort)}
+                options={[
+                  { value: "day_pair_asc", label: "День → пара" },
+                  { value: "pair_asc", label: "Пара (раннее → позднее)" },
+                  { value: "pair_desc", label: "Пара (позднее → раннее)" },
+                  { value: "time_asc", label: "Время начала ↑" },
+                  { value: "time_desc", label: "Время начала ↓" },
+                  { value: "subject_asc", label: "Предмет (А-Я)" },
+                ]}
+              />
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium">Поиск по предмету</label>
+                <input
+                  type="text"
+                  value={filters.subject}
+                  onChange={(e) =>
+                    setFilters((f) => ({ ...f, subject: e.target.value }))
+                  }
+                  placeholder="Например: математика"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-gray-text">
+              Показано {visibleItems.length} из {items.length}
+            </p>
+          </div>
+          <div className="overflow-x-auto rounded-xl bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead className="border-b bg-gray-50 text-[#8a8c8f]">
               <tr>
@@ -170,7 +364,7 @@ export const AdminSchedule = () => {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {items.map((item) => (
+              {visibleItems.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-[#8a8c8f]">{item.id}</td>
                   <td className="px-4 py-3 font-medium">{item.subject}</td>
@@ -198,16 +392,19 @@ export const AdminSchedule = () => {
                   </td>
                 </tr>
               ))}
-              {items.length === 0 && (
+              {visibleItems.length === 0 && (
                 <tr>
                   <td colSpan={9} className="px-4 py-8 text-center text-[#8a8c8f]">
-                    Расписание пустое
+                    {items.length === 0
+                      ? "Расписание пустое"
+                      : "По выбранным фильтрам ничего не найдено"}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
 
       {/* Create modal */}
@@ -404,6 +601,33 @@ export const AdminSchedule = () => {
 
 const inputCls =
   "h-10 rounded-lg border border-[#8a8c8f] bg-[#f7faff] px-3 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand/30";
+
+const FilterSelect = ({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) => (
+  <div className="flex flex-col gap-1">
+    <label className="text-sm font-medium">{label}</label>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={inputCls}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  </div>
+);
 
 const SelectField = ({
   label,

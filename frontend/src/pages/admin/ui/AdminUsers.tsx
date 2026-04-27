@@ -1,5 +1,5 @@
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { GroupOut, UserCreate, UserOut, UserUpdate } from "#/shared/api";
 import { adminApi } from "#/shared/api";
@@ -16,6 +16,26 @@ const ROLE_LABELS: Record<string, string> = {
   teacher: "Преподаватель",
   admin: "Администратор",
 };
+
+type UsersSort =
+  | "id_asc"
+  | "id_desc"
+  | "name_asc"
+  | "name_desc"
+  | "username_asc"
+  | "username_desc";
+
+type UsersFilters = {
+  role: "all" | "default" | "teacher" | "admin";
+  groupId: string; // "" = все, "none" = без группы, "<id>" = группа
+  search: string;
+};
+
+const emptyUsersFilters = (): UsersFilters => ({
+  role: "all",
+  groupId: "",
+  search: "",
+});
 
 const usersQueryKey = ["admin", "users"] as const;
 const groupsQueryKey = ["admin", "groups"] as const;
@@ -115,6 +135,54 @@ export const AdminUsers = () => {
   const groupName = (id: number | null) =>
     id ? (groups.find((g) => g.id === id)?.name ?? String(id)) : "—";
 
+  const [filters, setFilters] = useState<UsersFilters>(emptyUsersFilters());
+  const [sort, setSort] = useState<UsersSort>("id_asc");
+
+  const visibleUsers = useMemo(() => {
+    const filtered = users.filter((u) => {
+      if (filters.role !== "all" && u.role !== filters.role) return false;
+      if (filters.groupId === "none" && u.group_id !== null) return false;
+      if (
+        filters.groupId !== "" &&
+        filters.groupId !== "none" &&
+        u.group_id !== Number(filters.groupId)
+      )
+        return false;
+      if (filters.search) {
+        const q = filters.search.trim().toLowerCase();
+        if (!u.name.toLowerCase().includes(q) && !u.username.toLowerCase().includes(q))
+          return false;
+      }
+      return true;
+    });
+
+    const sorted = [...filtered];
+    sorted.sort((a, b) => {
+      switch (sort) {
+        case "id_desc":
+          return b.id - a.id;
+        case "name_asc":
+          return a.name.localeCompare(b.name, "ru");
+        case "name_desc":
+          return b.name.localeCompare(a.name, "ru");
+        case "username_asc":
+          return a.username.localeCompare(b.username);
+        case "username_desc":
+          return b.username.localeCompare(a.username);
+        case "id_asc":
+        default:
+          return a.id - b.id;
+      }
+    });
+    return sorted;
+  }, [users, filters, sort]);
+
+  const filtersActive =
+    filters.role !== "all" ||
+    filters.groupId !== "" ||
+    filters.search !== "" ||
+    sort !== "id_asc";
+
   return (
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
@@ -137,7 +205,77 @@ export const AdminUsers = () => {
       {isError && <p className="text-[#e96466]">Не удалось загрузить данные</p>}
 
       {!isLoading && !isError && (
-        <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+        <>
+          <div className="mb-4 rounded-xl bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-text">Фильтры и сортировка</p>
+              {filtersActive && (
+                <button
+                  onClick={() => {
+                    setFilters(emptyUsersFilters());
+                    setSort("id_asc");
+                  }}
+                  className="text-sm text-brand hover:underline"
+                >
+                  Сбросить
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+              <FilterSelect
+                label="Роль"
+                value={filters.role}
+                onChange={(v) =>
+                  setFilters((f) => ({ ...f, role: v as UsersFilters["role"] }))
+                }
+                options={[
+                  { value: "all", label: "Все роли" },
+                  { value: "default", label: "Студенты" },
+                  { value: "teacher", label: "Преподаватели" },
+                  { value: "admin", label: "Администраторы" },
+                ]}
+              />
+              <FilterSelect
+                label="Группа"
+                value={filters.groupId}
+                onChange={(v) => setFilters((f) => ({ ...f, groupId: v }))}
+                options={[
+                  { value: "", label: "Все" },
+                  { value: "none", label: "Без группы" },
+                  ...groups.map((g) => ({ value: String(g.id), label: g.name })),
+                ]}
+              />
+              <FilterSelect
+                label="Сортировка"
+                value={sort}
+                onChange={(v) => setSort(v as UsersSort)}
+                options={[
+                  { value: "id_asc", label: "ID ↑" },
+                  { value: "id_desc", label: "ID ↓" },
+                  { value: "name_asc", label: "Имя А-Я" },
+                  { value: "name_desc", label: "Имя Я-А" },
+                  { value: "username_asc", label: "Логин А-Я" },
+                  { value: "username_desc", label: "Логин Я-А" },
+                ]}
+              />
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium">Поиск</label>
+                <input
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) =>
+                    setFilters((f) => ({ ...f, search: e.target.value }))
+                  }
+                  placeholder="Логин или имя"
+                  className="h-10 rounded-lg border border-gray-text bg-[#f7faff] px-3 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand/30"
+                />
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-gray-text">
+              Показано {visibleUsers.length} из {users.length}
+            </p>
+          </div>
+          <div className="overflow-hidden rounded-xl bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead className="border-b bg-gray-50 text-[#8a8c8f]">
               <tr>
@@ -150,7 +288,7 @@ export const AdminUsers = () => {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {users.map((u) => (
+              {visibleUsers.map((u) => (
                 <tr key={u.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-[#8a8c8f]">{u.id}</td>
                   <td className="px-4 py-3 font-medium">{u.username}</td>
@@ -173,16 +311,19 @@ export const AdminUsers = () => {
                   </td>
                 </tr>
               ))}
-              {users.length === 0 && (
+              {visibleUsers.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-[#8a8c8f]">
-                    Нет пользователей
+                    {users.length === 0
+                      ? "Нет пользователей"
+                      : "По выбранным фильтрам ничего не найдено"}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
 
       {/* Create modal */}
@@ -291,6 +432,33 @@ export const AdminUsers = () => {
     </div>
   );
 };
+
+const FilterSelect = ({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) => (
+  <div className="flex flex-col gap-1">
+    <label className="text-sm font-medium">{label}</label>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-10 rounded-lg border border-gray-text bg-[#f7faff] px-3 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand/30"
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  </div>
+);
 
 const Field = ({
   label,
