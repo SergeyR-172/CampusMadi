@@ -1,8 +1,8 @@
 const envUrl = import.meta.env["VITE_API_URL"] as string | undefined;
 
 export const config = {
-  // SSR: use full URL (no CORS); browser: use relative URL so Vite proxy handles it
-  baseUrl: typeof window === "undefined"
-    ? (envUrl ?? "http://localhost:8000")
-    : (envUrl ?? ""),
+  // Пустой базовый URL: пути в api-модулях уже начинаются с /api/...
+  // В dev запросы идут на тот же origin и проксируются Vite на backend:8000.
+  // В prod nginx проксирует /api/* на backend:8000 (см. nginx.conf).
+  baseUrl: envUrl ?? "",
 };

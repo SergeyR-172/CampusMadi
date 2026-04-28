@@ -1,0 +1,10 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campusmadi-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - BACKEND_HOST=${BACKEND_HOST:-host.docker.internal}

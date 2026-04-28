@@ -1,26 +1,27 @@
-import tailwindcss from '@tailwindcss/vite'
-import { devtools } from '@tanstack/devtools-vite'
-import { tanstackStart } from '@tanstack/react-start/plugin/vite'
-import viteReact from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
-import tsconfigPaths from 'vite-tsconfig-paths'
+import tailwindcss from "@tailwindcss/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
+import viteReact from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+
+const backendHost = process.env["BACKEND_HOST"] || "localhost";
 
 const config = defineConfig({
   plugins: [
-    devtools(),
-    tsconfigPaths({ projects: ['./tsconfig.json'] }),
+    tsconfigPaths({ projects: ["./tsconfig.json"] }),
     tailwindcss(),
-    tanstackStart(),
+    tanstackRouter({ target: "react", autoCodeSplitting: true }),
     viteReact(),
   ],
   server: {
+    port: 3000,
     proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
+      "/api": {
+        target: `http://${backendHost}:8000`,
         changeOrigin: true,
       },
     },
   },
-})
+});
 
-export default config
+export default config;

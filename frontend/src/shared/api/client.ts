@@ -10,21 +10,35 @@ export class ApiError extends Error {
   }
 }
 
-const getSsrCookieHeader = async (): Promise<string | undefined> => {
-  if (typeof window !== "undefined") return undefined;
-  const { getRequestHeader } = await import("@tanstack/react-start/server");
-  return getRequestHeader("cookie") ?? undefined;
+const parseDetail = (detail: unknown): string | null => {
+  if (!detail) return null;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (item && typeof item === "object" && "msg" in item) {
+          const msg = (item as { msg?: unknown }).msg;
+          return typeof msg === "string" ? msg : null;
+        }
+        return null;
+      })
+      .filter((m): m is string => Boolean(m));
+    return messages.length > 0 ? messages.join("; ") : null;
+  }
+  if (typeof detail === "object" && "msg" in detail) {
+    const msg = (detail as { msg?: unknown }).msg;
+    if (typeof msg === "string") return msg;
+  }
+  return null;
 };
 
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const ssrCookie = await getSsrCookieHeader();
-
   const response = await fetch(`${config.baseUrl}${path}`, {
     ...init,
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(ssrCookie ? { cookie: ssrCookie } : {}),
       ...init?.headers,
     },
   });
@@ -32,8 +46,9 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   if (!response.ok) {
     let message = `HTTP ${response.status}`;
     try {
-      const body = (await response.json()) as { detail?: string };
-      if (body.detail) message = String(body.detail);
+      const body = (await response.json()) as { detail?: unknown };
+      const parsed = parseDetail(body.detail);
+      if (parsed) message = parsed;
     } catch {
       // ignore JSON parse errors
     }

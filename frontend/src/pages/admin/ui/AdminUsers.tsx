@@ -2,7 +2,7 @@ import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import type { GroupOut, UserCreate, UserOut, UserUpdate } from "#/shared/api";
-import { adminApi } from "#/shared/api";
+import { adminApi, getErrorMessage } from "#/shared/api";
 import { Modal } from "#/shared/ui";
 
 const ROLES = [
@@ -77,7 +77,8 @@ export const AdminUsers = () => {
       setCreateOpen(false);
       setCreateForm(emptyCreate());
     },
-    onError: () => setCreateError("Не удалось создать пользователя"),
+    onError: (err) =>
+      setCreateError(getErrorMessage(err, "Не удалось создать пользователя")),
   });
 
   const updateMutation = useMutation({
@@ -87,7 +88,8 @@ export const AdminUsers = () => {
       invalidateUsers();
       setEditUser(null);
     },
-    onError: () => setEditError("Не удалось обновить пользователя"),
+    onError: (err) =>
+      setEditError(getErrorMessage(err, "Не удалось обновить пользователя")),
   });
 
   const deleteMutation = useMutation({

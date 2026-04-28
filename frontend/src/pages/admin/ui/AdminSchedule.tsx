@@ -7,7 +7,7 @@ import type {
   ScheduleItemUpdate,
   WeekType,
 } from "#/shared/api";
-import { adminApi } from "#/shared/api";
+import { adminApi, getErrorMessage } from "#/shared/api";
 import { Modal } from "#/shared/ui";
 
 const DAY_NAMES = ["", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
@@ -103,7 +103,7 @@ export const AdminSchedule = () => {
       setCreateOpen(false);
       setCreateForm(emptyCreate());
     },
-    onError: () => setCreateError("Не удалось создать занятие"),
+    onError: (err) => setCreateError(getErrorMessage(err, "Не удалось создать занятие")),
   });
 
   const updateMutation = useMutation({
@@ -113,7 +113,7 @@ export const AdminSchedule = () => {
       invalidate();
       setEditItem(null);
     },
-    onError: () => setEditError("Не удалось обновить занятие"),
+    onError: (err) => setEditError(getErrorMessage(err, "Не удалось обновить занятие")),
   });
 
   const deleteMutation = useMutation({

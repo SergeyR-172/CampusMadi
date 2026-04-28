@@ -4,7 +4,7 @@
 
 | Команда           | Описание                                            |
 | ----------------- | --------------------------------------------------- |
-| `npm run dev`     | Запуск dev-сервера на порту 3000                    |
+| `pnpm dev`     | Запуск dev-сервера на порту 3000                    |
 | `npm run build`   | Сборка продакшн-бандла                              |
 | `npm run preview` | Превью продакшн-сборки                              |
 | `npm run test`    | Запуск тестов (vitest run)                          |
@@ -12,6 +12,7 @@
 | `npm run format`  | Проверка форматирования через Prettier (без записи) |
 | `npm run check`   | Форматирование Prettier + автофикс ESLint           |
 | `npm run fix`     | Автофикс ESLint + форматирование Prettier           |
+Запуск prod: BACKEND_HOST=host.docker.internal docker compose up -d --build из frontend/, фронт будет на http://localhost:3000
 
 > Проект использует `pnpm`. Предпочтительно использовать `pnpm run <команда>`.
 

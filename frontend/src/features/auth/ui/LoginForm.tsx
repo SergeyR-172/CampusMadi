@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { userKeys } from "#/entities/user";
 import type { UserSchema } from "#/shared/api";
-import { ApiError, authApi } from "#/shared/api";
+import { authApi, getErrorMessage } from "#/shared/api";
 import { cn } from "#/shared/lib";
 
 type Props = {
@@ -26,11 +26,7 @@ export const LoginForm = ({ onSuccess }: Props) => {
       onSuccess(user);
     },
     onError: (err) => {
-      if (err instanceof ApiError && err.status === 401) {
-        setError("Неверный логин или пароль");
-      } else {
-        setError("Ошибка сервера. Попробуйте позже.");
-      }
+      setError(getErrorMessage(err, "Ошибка сервера. Попробуйте позже."));
     },
   });
 

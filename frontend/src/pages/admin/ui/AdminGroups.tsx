@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import type { GroupOut } from "#/shared/api";
-import { adminApi } from "#/shared/api";
+import { adminApi, getErrorMessage } from "#/shared/api";
 import { Modal } from "#/shared/ui";
 
 const groupsQueryKey = ["admin", "groups"] as const;
@@ -33,7 +33,7 @@ export const AdminGroups = () => {
       setCreateOpen(false);
       setCreateName("");
     },
-    onError: () => setCreateError("Не удалось создать группу"),
+    onError: (err) => setCreateError(getErrorMessage(err, "Не удалось создать группу")),
   });
 
   const updateMutation = useMutation({
@@ -43,7 +43,7 @@ export const AdminGroups = () => {
       invalidate();
       setEditGroup(null);
     },
-    onError: () => setEditError("Не удалось обновить группу"),
+    onError: (err) => setEditError(getErrorMessage(err, "Не удалось обновить группу")),
   });
 
   const deleteMutation = useMutation({
