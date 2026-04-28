@@ -1,1 +1,1 @@
-export { meQueryOptions, useCurrentUser, userKeys } from "./model/queries";
+export { fetchCurrentUser, meQueryOptions, useCurrentUser, userKeys } from "./model/queries";

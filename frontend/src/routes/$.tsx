@@ -1,17 +1,13 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { fetchCurrentUser } from "#/entities/user";
-import { HomePage } from "#/pages/home/index.ts";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/$")({
   beforeLoad: async () => {
     const user = await fetchCurrentUser();
     if (!user) {
       throw redirect({ to: "/login" });
     }
-    if (user.role === "admin") {
-      throw redirect({ to: "/admin" });
-    }
+    throw redirect({ to: user.role === "admin" ? "/admin" : "/" });
   },
-  component: HomePage,
 });

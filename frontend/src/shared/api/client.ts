@@ -10,12 +10,21 @@ export class ApiError extends Error {
   }
 }
 
+const getSsrCookieHeader = async (): Promise<string | undefined> => {
+  if (typeof window !== "undefined") return undefined;
+  const { getRequestHeader } = await import("@tanstack/react-start/server");
+  return getRequestHeader("cookie") ?? undefined;
+};
+
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
+  const ssrCookie = await getSsrCookieHeader();
+
   const response = await fetch(`${config.baseUrl}${path}`, {
     ...init,
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...(ssrCookie ? { cookie: ssrCookie } : {}),
       ...init?.headers,
     },
   });
