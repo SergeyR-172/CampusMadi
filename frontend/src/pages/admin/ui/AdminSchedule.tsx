@@ -237,7 +237,7 @@ export const AdminSchedule = () => {
             setCreateError(null);
             setCreateOpen(true);
           }}
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+          className="bg-brand rounded-lg px-4 py-2 text-sm font-medium text-white hover:opacity-90"
         >
           + Добавить занятие
         </button>
@@ -250,14 +250,14 @@ export const AdminSchedule = () => {
         <>
           <div className="mb-4 rounded-xl bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-text">Фильтры и сортировка</p>
+              <p className="text-gray-text text-sm font-medium">Фильтры и сортировка</p>
               {filtersActive && (
                 <button
                   onClick={() => {
                     setFilters(emptyFilters());
                     setSort("day_pair_asc");
                   }}
-                  className="text-sm text-brand hover:underline"
+                  className="text-brand text-sm hover:underline"
                 >
                   Сбросить
                 </button>
@@ -302,8 +302,8 @@ export const AdminSchedule = () => {
                 }
                 options={[
                   { value: "all", label: "Любой" },
-                  { value: "odd_or_both", label: "Числитель (вкл. каждую)" },
-                  { value: "even_or_both", label: "Знаменатель (вкл. каждую)" },
+                  { value: "odd_or_both", label: "Числитель и каждую неделю" },
+                  { value: "even_or_both", label: "Знаменатель и каждую неделю" },
                   { value: "odd", label: "Только числитель" },
                   { value: "even", label: "Только знаменатель" },
                   { value: "both", label: "Только каждую неделю" },
@@ -324,10 +324,10 @@ export const AdminSchedule = () => {
                 onChange={(v) => setSort(v as ScheduleSort)}
                 options={[
                   { value: "day_pair_asc", label: "День → пара" },
-                  { value: "pair_asc", label: "Пара (раннее → позднее)" },
-                  { value: "pair_desc", label: "Пара (позднее → раннее)" },
-                  { value: "time_asc", label: "Время начала ↑" },
-                  { value: "time_desc", label: "Время начала ↓" },
+                  { value: "pair_asc", label: "По номеру пары (1 → 6)" },
+                  { value: "pair_desc", label: "По номеру пары (6 → 1)" },
+                  { value: "time_asc", label: "По времени начала (раннее → позднее)" },
+                  { value: "time_desc", label: "По времени начала (позднее → раннее)" },
                   { value: "subject_asc", label: "Предмет (А-Я)" },
                 ]}
               />
@@ -336,73 +336,71 @@ export const AdminSchedule = () => {
                 <input
                   type="text"
                   value={filters.subject}
-                  onChange={(e) =>
-                    setFilters((f) => ({ ...f, subject: e.target.value }))
-                  }
+                  onChange={(e) => setFilters((f) => ({ ...f, subject: e.target.value }))}
                   placeholder="Например: математика"
                   className={inputCls}
                 />
               </div>
             </div>
-            <p className="mt-3 text-xs text-gray-text">
+            <p className="text-gray-text mt-3 text-xs">
               Показано {visibleItems.length} из {items.length}
             </p>
           </div>
           <div className="overflow-x-auto rounded-xl bg-white shadow-sm">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-gray-50 text-[#8a8c8f]">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">ID</th>
-                <th className="px-4 py-3 text-left font-medium">Предмет</th>
-                <th className="px-4 py-3 text-left font-medium">Группа</th>
-                <th className="px-4 py-3 text-left font-medium">Преподаватель</th>
-                <th className="px-4 py-3 text-left font-medium">День</th>
-                <th className="px-4 py-3 text-left font-medium">Пара</th>
-                <th className="px-4 py-3 text-left font-medium">Время</th>
-                <th className="px-4 py-3 text-left font-medium">Неделя</th>
-                <th className="px-4 py-3 text-right font-medium">Действия</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {visibleItems.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-[#8a8c8f]">{item.id}</td>
-                  <td className="px-4 py-3 font-medium">{item.subject}</td>
-                  <td className="px-4 py-3">{groupName(item.group_id)}</td>
-                  <td className="px-4 py-3">{teacherName(item.teacher_id)}</td>
-                  <td className="px-4 py-3">{DAY_NAMES[item.day_of_week]}</td>
-                  <td className="px-4 py-3">{item.pair_number}</td>
-                  <td className="whitespace-nowrap px-4 py-3">
-                    {item.start_time.slice(0, 5)}–{item.end_time.slice(0, 5)}
-                  </td>
-                  <td className="px-4 py-3">{WEEK_TYPE_LABELS[item.week_type]}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right">
-                    <button
-                      onClick={() => openEdit(item)}
-                      className="mr-3 text-brand hover:underline"
-                    >
-                      Изменить
-                    </button>
-                    <button
-                      onClick={() => setDeleteItem(item)}
-                      className="text-[#e96466] hover:underline"
-                    >
-                      Удалить
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {visibleItems.length === 0 && (
+            <table className="w-full text-sm">
+              <thead className="border-b bg-gray-50 text-[#8a8c8f]">
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-[#8a8c8f]">
-                    {items.length === 0
-                      ? "Расписание пустое"
-                      : "По выбранным фильтрам ничего не найдено"}
-                  </td>
+                  <th className="px-4 py-3 text-left font-medium">ID</th>
+                  <th className="px-4 py-3 text-left font-medium">Предмет</th>
+                  <th className="px-4 py-3 text-left font-medium">Группа</th>
+                  <th className="px-4 py-3 text-left font-medium">Преподаватель</th>
+                  <th className="px-4 py-3 text-left font-medium">День</th>
+                  <th className="px-4 py-3 text-left font-medium">Пара</th>
+                  <th className="px-4 py-3 text-left font-medium">Время</th>
+                  <th className="px-4 py-3 text-left font-medium">Неделя</th>
+                  <th className="px-4 py-3 text-right font-medium">Действия</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y">
+                {visibleItems.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-[#8a8c8f]">{item.id}</td>
+                    <td className="px-4 py-3 font-medium">{item.subject}</td>
+                    <td className="px-4 py-3">{groupName(item.group_id)}</td>
+                    <td className="px-4 py-3">{teacherName(item.teacher_id)}</td>
+                    <td className="px-4 py-3">{DAY_NAMES[item.day_of_week]}</td>
+                    <td className="px-4 py-3">{item.pair_number}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {item.start_time.slice(0, 5)}–{item.end_time.slice(0, 5)}
+                    </td>
+                    <td className="px-4 py-3">{WEEK_TYPE_LABELS[item.week_type]}</td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => openEdit(item)}
+                        className="text-brand mr-3 hover:underline"
+                      >
+                        Изменить
+                      </button>
+                      <button
+                        onClick={() => setDeleteItem(item)}
+                        className="text-[#e96466] hover:underline"
+                      >
+                        Удалить
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {visibleItems.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-8 text-center text-[#8a8c8f]">
+                      {items.length === 0
+                        ? "Расписание пустое"
+                        : "По выбранным фильтрам ничего не найдено"}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </>
       )}
@@ -479,13 +477,11 @@ export const AdminSchedule = () => {
             value={createForm.date_to}
             onChange={(v) => setCreateForm((f) => ({ ...f, date_to: v }))}
           />
-          {createError && (
-            <p className="col-span-2 text-sm text-[#e96466]">{createError}</p>
-          )}
+          {createError && <p className="col-span-2 text-sm text-[#e96466]">{createError}</p>}
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="col-span-2 mt-2 rounded-lg bg-brand py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+            className="bg-brand col-span-2 mt-2 rounded-lg py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
           >
             {createMutation.isPending ? "Создание..." : "Создать"}
           </button>
@@ -567,7 +563,7 @@ export const AdminSchedule = () => {
           <button
             type="submit"
             disabled={updateMutation.isPending}
-            className="col-span-2 mt-2 rounded-lg bg-brand py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+            className="bg-brand col-span-2 mt-2 rounded-lg py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
           >
             {updateMutation.isPending ? "Сохранение..." : "Сохранить"}
           </button>
@@ -582,7 +578,7 @@ export const AdminSchedule = () => {
         <div className="flex gap-3">
           <button
             onClick={() => setDeleteItem(null)}
-            className="flex-1 rounded-lg border border-border py-2.5 text-sm hover:bg-gray-50"
+            className="border-border flex-1 rounded-lg border py-2.5 text-sm hover:bg-gray-50"
           >
             Отмена
           </button>
