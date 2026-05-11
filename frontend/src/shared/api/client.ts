@@ -33,8 +33,35 @@ const parseDetail = (detail: unknown): string | null => {
   return null;
 };
 
-const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(`${config.baseUrl}${path}`, {
+const REFRESH_PATH = "/api/jwt/refresh";
+const LOGIN_PATH = "/api/jwt/login";
+const LOGOUT_PATH = "/api/jwt/logout";
+
+let refreshPromise: Promise<boolean> | null = null;
+
+const performRefresh = (): Promise<boolean> => {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${config.baseUrl}${REFRESH_PATH}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      setTimeout(() => {
+        refreshPromise = null;
+      }, 0);
+    }
+  })();
+  return refreshPromise;
+};
+
+const doFetch = (path: string, init?: RequestInit): Promise<Response> =>
+  fetch(`${config.baseUrl}${path}`, {
     ...init,
     credentials: "include",
     headers: {
@@ -42,6 +69,19 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
       ...init?.headers,
     },
   });
+
+const isAuthPath = (path: string): boolean =>
+  path === REFRESH_PATH || path === LOGIN_PATH || path === LOGOUT_PATH;
+
+const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
+  let response = await doFetch(path, init);
+
+  if (response.status === 401 && !isAuthPath(path)) {
+    const refreshed = await performRefresh();
+    if (refreshed) {
+      response = await doFetch(path, init);
+    }
+  }
 
   if (!response.ok) {
     let message = `HTTP ${response.status}`;
