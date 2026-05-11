@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 
 import { useCurrentUser, userKeys } from "#/entities/user";
+import { JsonImportButton } from "#/features/admin-json-import";
 import { authApi } from "#/shared/api";
 import { cn } from "#/shared/lib";
 
@@ -62,6 +63,7 @@ export const AdminLayout = () => {
               </Link>
             );
           })}
+          <JsonImportButton />
         </nav>
 
         <div className="border-t border-white/20 px-4 py-4">

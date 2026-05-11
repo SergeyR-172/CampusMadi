@@ -36,7 +36,7 @@ export const Modal = ({ open, onClose, title, children, className }: Props) => {
       >
         <div className="mb-6 flex items-center justify-between">
           <h2
-            className="text-xl font-semibold"
+            className="text-xl font-semibold text-black"
             style={{ fontFamily: "Roboto, sans-serif" }}
           >
             {title}
