@@ -234,6 +234,7 @@ export const AdminSchedule = () => {
         <button
           onClick={() => {
             setCreateForm(emptyCreate());
+            setCreateForm((f) => ({ ...f, group_id: groups[0].id, teacher_id: teachers[0].id}));
             setCreateError(null);
             setCreateOpen(true);
           }}
