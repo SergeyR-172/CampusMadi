@@ -13,7 +13,7 @@ class ScheduleItem(Base):
     __tablename__ = "schedule_items"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    subject: Mapped[str] = mapped_column(String(30), nullable=False)
+    subject: Mapped[str] = mapped_column(String, nullable=False)
     group_id: Mapped[int] = mapped_column(ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
     teacher_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"),nullable=False)
     day_of_week: Mapped[int] = mapped_column(Integer,nullable=False)

@@ -13,7 +13,7 @@ class Note(Base):
 
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     schedule_item_id: Mapped[Optional[int]] = mapped_column(ForeignKey("schedule_items.id", ondelete="CASCADE"), nullable=True)
-    text: Mapped[str] = mapped_column(String(255), nullable=False)
+    text: Mapped[str] = mapped_column(String, nullable=False)
     private: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
 
     author: Mapped["User"] = relationship(back_populates="notes") 
