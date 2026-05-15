@@ -39,21 +39,29 @@ export const LoginForm = ({ onSuccess }: Props) => {
   const isPending = loginMutation.isPending;
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <h1
-        className="text-3xl font-semibold text-foreground"
-        style={{ fontFamily: "Roboto, sans-serif" }}
-      >
-        Авторизация
-      </h1>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5 md:gap-6">
+      <div className="flex flex-col gap-2">
+        <h1
+          className="text-[25px] font-black leading-none tracking-[0.05em] text-foreground md:text-3xl md:font-semibold md:tracking-normal"
+          style={{ fontFamily: "Roboto, sans-serif" }}
+        >
+          Авторизация
+        </h1>
+        <p
+          className="text-[13px] leading-[15px] tracking-[0.05em] text-black md:hidden"
+          style={{ fontFamily: "Roboto, sans-serif" }}
+        >
+          Введите учетные данные, чтобы открыть расписание, заметки и личную информацию.
+        </p>
+      </div>
 
       <div className="flex flex-col gap-2">
         <label
           htmlFor="username"
-          className="text-sm font-semibold"
+          className="text-[13px] font-black tracking-[0.05em] md:text-sm md:font-semibold md:tracking-normal"
           style={{ fontFamily: "Roboto, sans-serif" }}
         >
-          Логин
+          Email
         </label>
         <input
           id="username"
@@ -62,10 +70,10 @@ export const LoginForm = ({ onSuccess }: Props) => {
           required
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="Введите логин"
+          placeholder="UserName@mail.com"
           className={cn(
-            "h-[54px] w-full rounded-[11px] border border-[#8a8c8f] bg-[#f7faff]",
-            "px-4 text-base outline-none transition-colors",
+            "h-[49px] w-full rounded-[10px] border border-[#8a8c8f] bg-[#f7faff] md:h-[54px] md:rounded-[11px]",
+            "px-4 text-[13px] outline-none transition-colors md:text-base",
             "focus:border-brand focus:ring-2 focus:ring-brand/20",
             "placeholder:text-[#8a8c8f]",
           )}
@@ -75,7 +83,7 @@ export const LoginForm = ({ onSuccess }: Props) => {
       <div className="flex flex-col gap-2">
         <label
           htmlFor="password"
-          className="text-sm font-semibold"
+          className="text-[13px] font-black tracking-[0.05em] md:text-sm md:font-semibold md:tracking-normal"
           style={{ fontFamily: "Roboto, sans-serif" }}
         >
           Пароль
@@ -89,12 +97,18 @@ export const LoginForm = ({ onSuccess }: Props) => {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Введите пароль"
           className={cn(
-            "h-[54px] w-full rounded-[11px] border border-[#8a8c8f] bg-[#f7faff]",
-            "px-4 text-base outline-none transition-colors",
+            "h-[49px] w-full rounded-[10px] border border-[#8a8c8f] bg-[#f7faff] md:h-[54px] md:rounded-[11px]",
+            "px-4 text-[13px] outline-none transition-colors md:text-base",
             "focus:border-brand focus:ring-2 focus:ring-brand/20",
             "placeholder:text-[#8a8c8f]",
           )}
         />
+        <span
+          className="mt-0.5 text-[13px] leading-[15px] tracking-[0.05em] text-[#8a8c8f] md:hidden"
+          style={{ fontFamily: "Roboto, sans-serif" }}
+        >
+          Забыли пароль?
+        </span>
       </div>
 
       {error && (
@@ -105,7 +119,7 @@ export const LoginForm = ({ onSuccess }: Props) => {
         type="submit"
         disabled={isPending}
         className={cn(
-          "mt-2 h-[54px] w-full rounded-[11px] bg-brand text-base font-semibold text-white",
+          "mt-2 h-[54px] w-full rounded-[10px] bg-brand text-base font-semibold text-white md:rounded-[11px]",
           "transition-opacity hover:opacity-90 active:opacity-80",
           "disabled:cursor-not-allowed disabled:opacity-60",
         )}
