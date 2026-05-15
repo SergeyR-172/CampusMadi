@@ -29,7 +29,7 @@ export const AdminLayout = () => {
   });
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen">
       {/* Sidebar */}
       <aside className="flex w-[220px] shrink-0 flex-col bg-brand text-white">
         <div className="border-b border-white/20 px-6 py-6">

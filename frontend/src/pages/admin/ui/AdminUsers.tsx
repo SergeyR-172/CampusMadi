@@ -186,8 +186,8 @@ export const AdminUsers = () => {
     sort !== "id_asc";
 
   return (
-    <div className="p-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="flex h-full flex-col p-8">
+      <div className="mb-6 flex shrink-0 items-center justify-between">
         <h1 className="text-2xl font-semibold" style={{ fontFamily: "Roboto, sans-serif" }}>
           Пользователи
         </h1>
@@ -208,7 +208,7 @@ export const AdminUsers = () => {
 
       {!isLoading && !isError && (
         <>
-          <div className="mb-4 rounded-xl bg-white p-4 shadow-sm">
+          <div className="mb-4 shrink-0 rounded-xl bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm font-medium text-gray-text">Фильтры и сортировка</p>
               {filtersActive && (
@@ -277,9 +277,9 @@ export const AdminUsers = () => {
               Показано {visibleUsers.length} из {users.length}
             </p>
           </div>
-          <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <div className="min-h-0 flex-1 overflow-auto rounded-xl bg-white shadow-sm">
           <table className="w-full text-sm">
-            <thead className="border-b bg-gray-50 text-[#8a8c8f]">
+            <thead className="sticky top-0 z-10 border-b bg-gray-50 text-[#8a8c8f]">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">ID</th>
                 <th className="px-4 py-3 text-left font-medium">Логин</th>

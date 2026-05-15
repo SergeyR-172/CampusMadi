@@ -81,8 +81,8 @@ export const AdminGroups = () => {
   const groups = groupsQuery.data ?? [];
 
   return (
-    <div className="p-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="flex h-full flex-col p-8">
+      <div className="mb-6 flex shrink-0 items-center justify-between">
         <h1 className="text-2xl font-semibold" style={{ fontFamily: "Roboto, sans-serif" }}>
           Группы
         </h1>
@@ -102,9 +102,9 @@ export const AdminGroups = () => {
       {groupsQuery.isError && <p className="text-[#e96466]">Не удалось загрузить группы</p>}
 
       {groupsQuery.isSuccess && (
-        <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+        <div className="min-h-0 flex-1 overflow-auto rounded-xl bg-white shadow-sm">
           <table className="w-full text-sm">
-            <thead className="border-b bg-gray-50 text-[#8a8c8f]">
+            <thead className="sticky top-0 z-10 border-b bg-gray-50 text-[#8a8c8f]">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">ID</th>
                 <th className="px-4 py-3 text-left font-medium">Название</th>

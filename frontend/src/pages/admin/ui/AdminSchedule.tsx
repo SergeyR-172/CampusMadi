@@ -13,8 +13,8 @@ import { Modal } from "#/shared/ui";
 const DAY_NAMES = ["", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const WEEK_TYPE_LABELS: Record<WeekType, string> = {
   both: "Каждую неделю",
-  odd: "Нечётная",
-  even: "Чётная",
+  odd: "Числитель",
+  even: "Знаменатель",
 };
 
 type ScheduleSort =
@@ -226,8 +226,8 @@ export const AdminSchedule = () => {
     sort !== "day_pair_asc";
 
   return (
-    <div className="p-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="flex h-full flex-col p-8">
+      <div className="mb-6 flex shrink-0 items-center justify-between">
         <h1 className="text-2xl font-semibold" style={{ fontFamily: "Roboto, sans-serif" }}>
           Расписание
         </h1>
@@ -249,7 +249,7 @@ export const AdminSchedule = () => {
 
       {!isLoading && !isError && (
         <>
-          <div className="mb-4 rounded-xl bg-white p-4 shadow-sm">
+          <div className="mb-4 shrink-0 rounded-xl bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-gray-text text-sm font-medium">Фильтры и сортировка</p>
               {filtersActive && (
@@ -347,9 +347,9 @@ export const AdminSchedule = () => {
               Показано {visibleItems.length} из {items.length}
             </p>
           </div>
-          <div className="overflow-x-auto rounded-xl bg-white shadow-sm">
+          <div className="min-h-0 flex-1 overflow-auto rounded-xl bg-white shadow-sm">
             <table className="w-full text-sm">
-              <thead className="border-b bg-gray-50 text-[#8a8c8f]">
+              <thead className="sticky top-0 z-10 border-b bg-gray-50 text-[#8a8c8f]">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">ID</th>
                   <th className="px-4 py-3 text-left font-medium">Предмет</th>
@@ -464,8 +464,8 @@ export const AdminSchedule = () => {
             onChange={(v) => setCreateForm((f) => ({ ...f, week_type: v as WeekType }))}
             options={[
               { value: "both", label: "Каждую неделю" },
-              { value: "odd", label: "Нечётная" },
-              { value: "even", label: "Чётная" },
+              { value: "odd", label: "Числитель" },
+              { value: "even", label: "Знаменатель" },
             ]}
           />
           <DateField
@@ -546,8 +546,8 @@ export const AdminSchedule = () => {
             onChange={(v) => setEditForm((f) => ({ ...f, week_type: v as WeekType }))}
             options={[
               { value: "both", label: "Каждую неделю" },
-              { value: "odd", label: "Нечётная" },
-              { value: "even", label: "Чётная" },
+              { value: "odd", label: "Числитель" },
+              { value: "even", label: "Знаменатель" },
             ]}
           />
           <DateField
