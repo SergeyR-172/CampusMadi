@@ -42,7 +42,7 @@ const PairCard = ({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-stretch overflow-hidden rounded-2xl border-2 bg-white text-left transition-all",
+        "flex w-full shrink-0 items-stretch overflow-hidden rounded-2xl border-2 bg-white text-left transition-all",
         active
           ? "border-brand shadow-md ring-2 ring-brand/20"
           : "border-transparent hover:border-brand/30",
@@ -53,7 +53,7 @@ const PairCard = ({
         className="w-3 shrink-0"
         style={{ backgroundColor: stripeColor }}
       />
-      <div className="flex flex-1 items-center gap-6 px-5 py-4">
+      <div className="flex min-w-0 flex-1 items-center gap-6 px-5 py-4">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <p
             className="truncate text-lg font-semibold text-foreground"
