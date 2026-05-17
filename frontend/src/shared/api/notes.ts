@@ -2,8 +2,11 @@ import { apiClient } from "./client";
 import type { NoteCreate, NoteOut, NoteUpdate } from "./types";
 
 export const notesApi = {
-  list: (scheduleItemId?: number) => {
-    const query = scheduleItemId !== undefined ? `?schedule_item_id=${scheduleItemId}` : "";
+  list: (scheduleItemId?: number, lessonDate?: string) => {
+    const params = new URLSearchParams();
+    if (scheduleItemId !== undefined) params.set("schedule_item_id", String(scheduleItemId));
+    if (lessonDate !== undefined) params.set("lesson_date", lessonDate);
+    const query = params.toString() ? `?${params.toString()}` : "";
     return apiClient.get<NoteOut[]>(`/api/notes${query}`);
   },
   get: (id: number) => apiClient.get<NoteOut>(`/api/notes/${id}`),

@@ -5,6 +5,7 @@ export {
   buildDaysRange,
   dayOffsetFromToday,
   formatDateDots,
+  formatDateIso,
   formatDayLong,
   formatTime,
   formatWeekdayShort,

@@ -60,12 +60,14 @@ export type NoteOut = {
   id: number;
   author_id: number;
   schedule_item_id: number | null;
+  lesson_date: string;
   text: string;
   private: boolean;
 };
 
 export type NoteCreate = {
   schedule_item_id: number;
+  lesson_date: string;
   text: string;
   private?: boolean;
 };

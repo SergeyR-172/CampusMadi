@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 
 import {
   dayOffsetFromToday,
+  formatDateIso,
   startOfDay,
   useScheduleDay,
   useScheduleWeek,
@@ -76,7 +77,11 @@ export const HomePage = () => {
             </div>
           </section>
 
-          <NotesPanel selectedItem={selectedItem} role={user?.role} />
+          <NotesPanel
+            selectedItem={selectedItem}
+            selectedDate={formatDateIso(selectedDate)}
+            role={user?.role}
+          />
         </div>
       </main>
     </div>

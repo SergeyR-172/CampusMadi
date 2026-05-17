@@ -12,6 +12,7 @@ import { parseNoteText, serializeNote } from "./noteUtils";
 
 type Props = {
   selectedItem: ScheduleItemOut | null;
+  selectedDate: string | null;
   role: UserRole | undefined;
 };
 
@@ -40,24 +41,26 @@ const CreateCard = ({ label, onClick }: { label: string; onClick: () => void }) 
   </button>
 );
 
-export const NotesPanel = ({ selectedItem, role }: Props) => {
+export const NotesPanel = ({ selectedItem, selectedDate, role }: Props) => {
   const isTeacher = role === "teacher";
   const [editorState, setEditorState] = useState<EditorState>(null);
 
   const { user } = useCurrentUser();
   const scheduleItemId = selectedItem?.id;
+  const lessonDate = selectedDate ?? undefined;
 
-  const { data: ownNotes = [] } = useNotes(scheduleItemId);
+  const { data: ownNotes = [] } = useNotes(scheduleItemId, lessonDate);
   const privateNote = ownNotes.find((n) => n.private);
   const ownPublicMaterial = isTeacher ? ownNotes.find((n) => !n.private) : undefined;
-  const createNote = useCreateNote(scheduleItemId ?? 0);
-  const updateNote = useUpdateNote(scheduleItemId ?? 0);
-  const deleteNote = useDeleteNote(scheduleItemId ?? 0);
+  const createNote = useCreateNote(scheduleItemId ?? 0, lessonDate ?? "");
+  const updateNote = useUpdateNote(scheduleItemId ?? 0, lessonDate ?? "");
+  const deleteNote = useDeleteNote(scheduleItemId ?? 0, lessonDate ?? "");
 
   const handleCreate = async (title: string, body: string, isPrivate: boolean) => {
-    if (!scheduleItemId) return;
+    if (!scheduleItemId || !lessonDate) return;
     await createNote.mutateAsync({
       schedule_item_id: scheduleItemId,
+      lesson_date: lessonDate,
       text: serializeNote(title, body),
       private: isPrivate,
     });
