@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.models import Note, ScheduleItem
+from core.models import LessonAttachment, Note, ScheduleItem
 
 
 async def get_schedule_items_for_day(
@@ -64,13 +64,35 @@ async def get_teacher_schedule_items_for_day(
 async def get_notes_for_schedule_items(
     session: AsyncSession,
     schedule_item_ids: list[int],
+    lesson_date: date,
 ) -> list[Note]:
     if not schedule_item_ids:
         return []
 
-    stmt = select(Note).where(Note.schedule_item_id.in_(schedule_item_ids))
+    stmt = select(Note).where(
+        Note.schedule_item_id.in_(schedule_item_ids),
+        Note.lesson_date == lesson_date,
+    )
     result = await session.execute(stmt)
     return list(result.scalars().all())
 
 
+async def get_attachments_for_schedule_items(
+    session: AsyncSession,
+    schedule_item_ids: list[int],
+    lesson_date: date,
+) -> list[LessonAttachment]:
+    if not schedule_item_ids:
+        return []
+
+    stmt = (
+        select(LessonAttachment)
+        .where(
+            LessonAttachment.schedule_item_id.in_(schedule_item_ids),
+            LessonAttachment.lesson_date == lesson_date,
+        )
+        .order_by(LessonAttachment.created_at, LessonAttachment.id)
+    )
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
 

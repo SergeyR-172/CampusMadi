@@ -4,7 +4,8 @@ __all__ = (
     "RefreshToken",
     "Note",
     "Group",
-    "ScheduleItem"
+    "ScheduleItem",
+    "LessonAttachment",
 )
 
 from .base import Base
@@ -13,3 +14,4 @@ from .refresh_token import RefreshToken
 from .group import Group
 from .note import Note
 from .schedule_item import ScheduleItem
+from .lesson_attachment import LessonAttachment

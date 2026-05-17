@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.jwt_auth.router import router as jwt_router
 from api.admin.router import router as admin_router
 from api.notes.router import router as notes_router
+from api.attachments.router import router as attachments_router
 from api.schedule.router import router as schedule_router
 from core.logging import register_logging_middleware
 import uvicorn
@@ -25,6 +26,7 @@ app.add_middleware(
 app.include_router(jwt_router)
 app.include_router(admin_router)
 app.include_router(notes_router)
+app.include_router(attachments_router)
 app.include_router(schedule_router)
 
 @app.get(

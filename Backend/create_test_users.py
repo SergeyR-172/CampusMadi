@@ -108,41 +108,50 @@ def build_test_notes(users: dict[str, User], schedule_items: dict[tuple[int, str
     se241_math = schedule_items[(users["test_teacher"].id, "Mathematics", 1)]
     se241_physics = schedule_items[(users["test_teacher_2"].id, "Physics", 2)]
     se242_programming = schedule_items[(users["test_teacher"].id, "Programming", 1)]
+    math_date = se241_math.date_from + timedelta(days=se241_math.day_of_week - 1)
+    physics_date = se241_physics.date_from + timedelta(days=se241_physics.day_of_week - 1)
+    programming_date = se242_programming.date_from + timedelta(days=se242_programming.day_of_week - 1)
 
     return [
         {
             "author_id": users["test_teacher"].id,
             "schedule_item_id": se241_math.id,
+            "lesson_date": math_date,
             "text": "Bring lecture notebook and calculator.",
             "private": False,
         },
         {
             "author_id": users["test_teacher"].id,
             "schedule_item_id": se241_math.id,
+            "lesson_date": math_date,
             "text": "We will also have a short quiz at the beginning of the class.",
             "private": True,
         },
         {
             "author_id": users["test_student_1"].id,
             "schedule_item_id": se241_math.id,
+            "lesson_date": math_date,
             "text": "Need to review integrals before class.",
             "private": False,
         },
         {
             "author_id": users["test_student_2"].id,
             "schedule_item_id": se241_physics.id,
+            "lesson_date": physics_date,
             "text": "Prepare lab report draft.",
             "private": False,
         },
         {
             "author_id": users["test_teacher"].id,
             "schedule_item_id": se242_programming.id,
+            "lesson_date": programming_date,
             "text": "First practical lesson will cover FastAPI basics.",
             "private": True,
         },
         {
             "author_id": users["test_student_3"].id,
             "schedule_item_id": se242_programming.id,
+            "lesson_date": programming_date,
             "text": "Check repository access before practice.",
             "private": False,
         },
@@ -254,6 +263,7 @@ async def get_or_create_note(session: AsyncSession, values: dict) -> Note:
     stmt = select(Note).where(
         Note.author_id == values["author_id"],
         Note.schedule_item_id == values["schedule_item_id"],
+        Note.lesson_date == values["lesson_date"],
         Note.text == values["text"],
     )
     result = await session.execute(stmt)
@@ -264,11 +274,11 @@ async def get_or_create_note(session: AsyncSession, values: dict) -> Note:
             note.private = values["private"]
             await session.flush()
             print(
-                f"[UPDATE] note privacy for schedule_item_id={values['schedule_item_id']} by author_id={values['author_id']} synchronized"
+                f"[UPDATE] note privacy for schedule_item_id={values['schedule_item_id']} lesson_date={values['lesson_date']} by author_id={values['author_id']} synchronized"
             )
             return note
         print(
-            f"[SKIP] Note for schedule_item_id={values['schedule_item_id']} by author_id={values['author_id']} already exists"
+            f"[SKIP] Note for schedule_item_id={values['schedule_item_id']} lesson_date={values['lesson_date']} by author_id={values['author_id']} already exists"
         )
         return note
 
@@ -276,7 +286,7 @@ async def get_or_create_note(session: AsyncSession, values: dict) -> Note:
     session.add(note)
     await session.flush()
     print(
-        f"[CREATE] note for schedule_item_id={values['schedule_item_id']} by author_id={values['author_id']}"
+        f"[CREATE] note for schedule_item_id={values['schedule_item_id']} lesson_date={values['lesson_date']} by author_id={values['author_id']}"
     )
     return note
 

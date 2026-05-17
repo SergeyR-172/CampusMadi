@@ -1,5 +1,6 @@
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import date
 
 from core.models import Note, ScheduleItem
 
@@ -23,13 +24,17 @@ async def get_notes_by_author(
     session: AsyncSession,
     author_id: int,
     schedule_item_id: int | None = None,
+    lesson_date: date | None = None,
 ) -> list[Note]:
     stmt = select(Note).where(Note.author_id == author_id)
 
     if schedule_item_id is not None:
         stmt = stmt.where(Note.schedule_item_id == schedule_item_id)
 
-    stmt = stmt.order_by(Note.schedule_item_id, Note.private, Note.id)
+    if lesson_date is not None:
+        stmt = stmt.where(Note.lesson_date == lesson_date)
+
+    stmt = stmt.order_by(Note.lesson_date, Note.schedule_item_id, Note.private, Note.id)
     result = await session.execute(stmt)
     return list(result.scalars().all())
 
@@ -39,6 +44,7 @@ async def get_note_for_slot(
     *,
     author_id: int,
     schedule_item_id: int,
+    lesson_date: date,
     is_teacher: bool,
     private: bool,
     exclude_id: int | None = None,
@@ -46,6 +52,7 @@ async def get_note_for_slot(
     stmt = select(Note).where(
         Note.author_id == author_id,
         Note.schedule_item_id == schedule_item_id,
+        Note.lesson_date == lesson_date,
     )
 
     if is_teacher:
