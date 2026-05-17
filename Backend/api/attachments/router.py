@@ -103,7 +103,12 @@ async def save_upload_file(file: UploadFile, destination: Path) -> int:
     "",
     response_model=AttachmentOut,
     status_code=status.HTTP_201_CREATED,
-    summary="Upload lesson attachment",
+    summary="Загрузить файл к занятию",
+    description=(
+        "Загружает файл к конкретному занятию по schedule_item_id и lesson_date. "
+        "Файл может загрузить только преподаватель, который ведет это занятие. "
+        "Дата должна соответствовать элементу расписания."
+    ),
 )
 async def upload_attachment(
     schedule_item_id: int = Form(gt=0),
@@ -146,7 +151,12 @@ async def upload_attachment(
 @router.get(
     "",
     response_model=list[AttachmentOut],
-    summary="List lesson attachments",
+    summary="Получить файлы занятия",
+    description=(
+        "Возвращает список файлов, прикрепленных к конкретному занятию по "
+        "schedule_item_id и lesson_date. Преподаватель видит файлы своих занятий, "
+        "студент видит файлы занятий своей группы."
+    ),
 )
 async def list_attachments(
     schedule_item_id: int = Query(gt=0),
@@ -170,7 +180,11 @@ async def list_attachments(
 
 @router.get(
     "/{attachment_id}/download",
-    summary="Download lesson attachment",
+    summary="Скачать файл занятия",
+    description=(
+        "Возвращает прикрепленный файл по ID. Доступ разрешен преподавателю этого "
+        "занятия и студентам группы, к которой относится занятие."
+    ),
 )
 async def download_attachment(
     attachment_id: int,
@@ -201,7 +215,11 @@ async def download_attachment(
 @router.delete(
     "/{attachment_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete lesson attachment",
+    summary="Удалить файл занятия",
+    description=(
+        "Удаляет прикрепленный файл по ID из базы данных и локального хранилища. "
+        "Удалять файл может только преподаватель, который ведет это занятие."
+    ),
 )
 async def delete_attachment(
     attachment_id: int,
