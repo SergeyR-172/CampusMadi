@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     day_schedule_ttl: int = 5
     week_schedule_ttl: int = 5
+    upload_dir: Path = BASE_DIR / "uploads"
 
     secret_key: str = "very-secret-key"
     algorithm: str = "HS256"

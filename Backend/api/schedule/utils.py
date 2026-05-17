@@ -7,11 +7,12 @@ from api.jwt_auth.schemas import AuthUserPayload
 from core.redis import redis_client
 from core.settings import settings
 from .crud import (
+    get_attachments_for_schedule_items,
     get_notes_for_schedule_items,
     get_schedule_items_for_day,
     get_teacher_schedule_items_for_day,
 )
-from .schemas import NoteOut, ScheduleDayOut, ScheduleItemOut
+from .schemas import AttachmentOut, NoteOut, ScheduleDayOut, ScheduleItemOut
 
 
 def build_day_schedule_cache_key(user_id: int, group_id: int, target_date: date) -> str:
@@ -42,6 +43,7 @@ def get_current_week_range(current_day: datetime) -> tuple[date, date]:
 def serialize_schedule_items(
     items,
     notes,
+    attachments,
     user_id: int,
     user_role: str,
 ) -> list[ScheduleItemOut]:
@@ -53,9 +55,16 @@ def serialize_schedule_items(
             NoteOut.model_validate(note)
         )
 
+    attachments_by_schedule_item: dict[int, list[AttachmentOut]] = {}
+    for attachment in attachments:
+        attachments_by_schedule_item.setdefault(attachment.schedule_item_id, []).append(
+            AttachmentOut.model_validate(attachment)
+        )
+
     serialized_items: list[ScheduleItemOut] = []
     for item in items:
         item_notes = notes_by_schedule_item.get(item.id, [])
+        item_attachments = attachments_by_schedule_item.get(item.id, [])
         teacher_notes = [
             note
             for note in item_notes
@@ -82,6 +91,7 @@ def serialize_schedule_items(
                 date_to=item.date_to,
                 user_notes=user_notes,
                 teacher_notes=teacher_notes,
+                attachments=item_attachments,
             )
         )
 
@@ -126,7 +136,12 @@ async def get_serialized_schedule_for_day(
         [item.id for item in items],
         target_date,
     )
-    serialized_items = serialize_schedule_items(items, notes, user_id, payload.role)
+    attachments = await get_attachments_for_schedule_items(
+        session,
+        [item.id for item in items],
+        target_date,
+    )
+    serialized_items = serialize_schedule_items(items, notes, attachments, user_id, payload.role)
     serialized_schedule = [item.model_dump(mode="json") for item in serialized_items]
 
     await redis_client.set_json(

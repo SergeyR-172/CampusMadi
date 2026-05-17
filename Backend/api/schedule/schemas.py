@@ -19,6 +19,18 @@ class NoteOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AttachmentOut(BaseModel):
+    id: int
+    schedule_item_id: int
+    lesson_date: date
+    teacher_id: int
+    original_filename: str
+    content_type: str
+    size: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ScheduleDayOut(BaseModel):
     date: date
     day_of_week: int
@@ -41,6 +53,7 @@ class ScheduleItemOut(BaseModel):
     date_to: date
     user_notes: list[NoteOut] = Field(default_factory=list)
     teacher_notes: list[NoteOut] = Field(default_factory=list)
+    attachments: list[AttachmentOut] = Field(default_factory=list)
 
 
     model_config = ConfigDict(from_attributes=True)
