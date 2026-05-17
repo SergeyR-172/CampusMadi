@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import date
 
 from api.jwt_auth.dependencies import get_current_payload
 from api.jwt_auth.schemas import AuthUserPayload
@@ -19,6 +20,25 @@ def normalize_private_flag(payload: AuthUserPayload, private: bool) -> bool:
     return private if is_teacher(payload) else False
 
 
+def is_schedule_item_on_date(schedule_item, lesson_date: date) -> bool:
+    if lesson_date < schedule_item.date_from or lesson_date > schedule_item.date_to:
+        return False
+
+    if lesson_date.isoweekday() != schedule_item.day_of_week:
+        return False
+
+    week_type = "even" if lesson_date.isocalendar().week % 2 == 0 else "odd"
+    return schedule_item.week_type in (week_type, "both")
+
+
+def ensure_lesson_date_matches_schedule_item(schedule_item, lesson_date: date) -> None:
+    if not is_schedule_item_on_date(schedule_item, lesson_date):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Lesson date does not match this schedule item",
+        )
+
+
 @router.get(
     "",
     response_model=list[NoteOut],
@@ -29,6 +49,7 @@ async def list_notes(
     payload: AuthUserPayload = Depends(get_current_payload),
     session: AsyncSession = Depends(database.get_session),
     schedule_item_id: int | None = None,
+    lesson_date: date | None = None,
 ):
     if schedule_item_id is not None:
         schedule_item = await crud.get_schedule_item_by_id(session, schedule_item_id)
@@ -47,7 +68,10 @@ async def list_notes(
                 detail="User cannot manage notes for this lesson",
             )
 
-    return await crud.get_notes_by_author(session, payload.sub, schedule_item_id)
+        if lesson_date is not None:
+            ensure_lesson_date_matches_schedule_item(schedule_item, lesson_date)
+
+    return await crud.get_notes_by_author(session, payload.sub, schedule_item_id, lesson_date)
 
 
 @router.get(
@@ -106,6 +130,7 @@ async def create_note(
     schedule_item = await crud.get_schedule_item_by_id(session, note_in.schedule_item_id)
     if schedule_item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Schedule item not found")
+    ensure_lesson_date_matches_schedule_item(schedule_item, note_in.lesson_date)
 
     if is_teacher(payload):
         if schedule_item.teacher_id != payload.sub:
@@ -125,6 +150,7 @@ async def create_note(
         session,
         author_id=payload.sub,
         schedule_item_id=schedule_item.id,
+        lesson_date=note_in.lesson_date,
         is_teacher=is_teacher(payload),
         private=private,
     )
@@ -140,6 +166,7 @@ async def create_note(
         {
             "author_id": payload.sub,
             "schedule_item_id": note_in.schedule_item_id,
+            "lesson_date": note_in.lesson_date,
             "text": note_in.text,
             "private": private,
         },
@@ -195,6 +222,7 @@ async def update_note(
             session,
             author_id=payload.sub,
             schedule_item_id=note.schedule_item_id,
+            lesson_date=note.lesson_date,
             is_teacher=is_teacher(payload),
             private=target_private,
             exclude_id=note.id,

@@ -64,11 +64,15 @@ async def get_teacher_schedule_items_for_day(
 async def get_notes_for_schedule_items(
     session: AsyncSession,
     schedule_item_ids: list[int],
+    lesson_date: date,
 ) -> list[Note]:
     if not schedule_item_ids:
         return []
 
-    stmt = select(Note).where(Note.schedule_item_id.in_(schedule_item_ids))
+    stmt = select(Note).where(
+        Note.schedule_item_id.in_(schedule_item_ids),
+        Note.lesson_date == lesson_date,
+    )
     result = await session.execute(stmt)
     return list(result.scalars().all())
 

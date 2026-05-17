@@ -12,6 +12,7 @@ class NoteOut(BaseModel):
     id: int
     author_id: int
     schedule_item_id: int | None
+    lesson_date: date
     text: str
     private: bool
 

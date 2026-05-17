@@ -121,7 +121,11 @@ async def get_serialized_schedule_for_day(
         return cached_schedule
 
     items = await fetch_items(*fetch_args)
-    notes = await get_notes_for_schedule_items(session, [item.id for item in items])
+    notes = await get_notes_for_schedule_items(
+        session,
+        [item.id for item in items],
+        target_date,
+    )
     serialized_items = serialize_schedule_items(items, notes, user_id, payload.role)
     serialized_schedule = [item.model_dump(mode="json") for item in serialized_items]
 
