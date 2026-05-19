@@ -6,6 +6,7 @@ import { useCreateNote, useDeleteNote, useNotes, useUpdateNote } from "#/entitie
 import { useCurrentUser } from "#/entities/user";
 import type { NoteOut, ScheduleItemOut, UserRole } from "#/shared/api";
 
+import { AttachmentsList } from "./AttachmentsList";
 import { NoteCard } from "./NoteCard";
 import { NoteEditor } from "./NoteEditor";
 import { parseNoteText, serializeNote } from "./noteUtils";
@@ -180,6 +181,13 @@ export const NotesPanel = ({ selectedItem, selectedDate, role }: Props) => {
                   Преподаватель пока не оставил материалов
                 </p>
               </div>
+            )}
+            {scheduleItemId !== undefined && lessonDate !== undefined && (
+              <AttachmentsList
+                scheduleItemId={scheduleItemId}
+                lessonDate={lessonDate}
+                canEdit={isTeacher}
+              />
             )}
           </div>
         </>

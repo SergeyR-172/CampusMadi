@@ -1,4 +1,4 @@
-import { FileText, SquarePen, Trash2 } from "lucide-react";
+import { SquarePen, Trash2 } from "lucide-react";
 
 import type { NoteOut } from "#/shared/api";
 
@@ -38,12 +38,6 @@ export const NoteCard = ({ note, canEdit, onEdit, onDelete }: Props) => {
           dangerouslySetInnerHTML={{ __html: body }}
         />
       )}
-
-      {/* File attachment stub */}
-      <div className="mt-4 flex items-center gap-2 border-t border-gray-100 pt-3 text-sm text-gray-text">
-        <FileText size={15} className="shrink-0" />
-        <span>Файл</span>
-      </div>
 
       {canEdit && (
         <button

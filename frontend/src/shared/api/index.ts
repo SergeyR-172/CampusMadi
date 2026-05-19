@@ -1,4 +1,5 @@
 export { adminApi } from "./admin";
+export { attachmentsApi } from "./attachments";
 export { authApi } from "./auth";
 export { apiClient, ApiError } from "./client";
 export { getErrorMessage } from "./errors";
@@ -7,6 +8,7 @@ export { queryClient } from "./queryClient";
 export { scheduleApi } from "./schedule";
 export type {
   AdminScheduleItemOut,
+  AttachmentOut,
   GroupCreate,
   GroupOut,
   GroupUpdate,

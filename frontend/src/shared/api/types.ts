@@ -127,6 +127,17 @@ export type ScheduleItemCreate = {
   date_to: string;
 };
 
+export type AttachmentOut = {
+  id: number;
+  schedule_item_id: number;
+  lesson_date: string;
+  teacher_id: number;
+  original_filename: string;
+  content_type: string;
+  size: number;
+  created_at: string;
+};
+
 export type ScheduleItemUpdate = {
   subject?: string | null;
   group_id?: number | null;
