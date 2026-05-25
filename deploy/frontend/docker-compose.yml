@@ -1,0 +1,18 @@
+name: campusmadi-frontend
+
+# ЗАПУСКАЕТСЯ НА СЕРВЕРЕ 10.10.213.240
+# nginx с собранным SPA. Все /api/* проксируются на бэкенд-сервер.
+
+services:
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    image: campusmadi-frontend:latest
+    container_name: campusmadi-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      # Подставляется в nginx.conf шаблоном envsubst при старте контейнера.
+      - BACKEND_HOST=${BACKEND_HOST}
